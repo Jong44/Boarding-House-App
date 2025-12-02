@@ -53,7 +53,7 @@ class MaintenanceCard extends StatelessWidget {
                 children: [
                   Expanded(
                     child: _buildTicketStatusBadge(
-                      '4',
+                      tickets['pending'].toString(),
                       'Pending',
                       const Color(0xFFFF5252),
                     ),
@@ -61,7 +61,7 @@ class MaintenanceCard extends StatelessWidget {
                   const SizedBox(width: 12),
                   Expanded(
                     child: _buildTicketStatusBadge(
-                      '2',
+                      tickets['inProgress'].toString(),
                       'In Progress',
                       const Color(0xFFFFC107),
                     ),

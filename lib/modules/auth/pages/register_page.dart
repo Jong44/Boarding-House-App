@@ -1,3 +1,4 @@
+import 'package:boarding_house_app/services/auth_service.dart';
 import 'package:flutter/material.dart';
 
 class RegisterPage extends StatefulWidget {
@@ -14,6 +15,30 @@ class _RegisterPageState extends State<RegisterPage> {
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   bool _agreeToTerms = false;
+
+  final AuthService _authService = AuthService();
+
+  Future<void> _register() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+    final confirmPassword = _confirmPasswordController.text.trim();
+
+    if (password != confirmPassword) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Passwords do not match')));
+      return;
+    }
+
+    try {
+      await _authService.signUp(email, password);
+      Navigator.pop(context);
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Registration failed: $e')));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -191,7 +216,9 @@ class _RegisterPageState extends State<RegisterPage> {
                           ),
                         ),
                         GestureDetector(
-                          onTap: () {},
+                          onTap: () {
+                            // Handle Terms & Conditions tap
+                          },
                           child: const Text(
                             'Terms & Conditions',
                             style: TextStyle(
@@ -212,7 +239,11 @@ class _RegisterPageState extends State<RegisterPage> {
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton(
-                  onPressed: _agreeToTerms ? () {} : null,
+                  onPressed: _agreeToTerms
+                      ? () {
+                          _register();
+                        }
+                      : null,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFFF5722),
                     disabledBackgroundColor: Colors.grey[300],

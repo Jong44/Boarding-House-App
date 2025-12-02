@@ -1,7 +1,9 @@
+import 'package:boarding_house_app/modules/admin/features/models/dashboard_contracts_model.dart';
 import 'package:flutter/material.dart';
 
 class TenantsSummaryCard extends StatelessWidget {
-  const TenantsSummaryCard({super.key});
+  final DashboardContractsModel data;
+  const TenantsSummaryCard({super.key, required this.data});
 
   @override
   Widget build(BuildContext context) {
@@ -59,7 +61,7 @@ class TenantsSummaryCard extends StatelessWidget {
                 children: [
                   Expanded(
                     child: _buildTenantStat(
-                      '47',
+                      data.totalContractsActive.toString(),
                       'Penghuni Aktif',
                       Icons.person_rounded,
                     ),
@@ -71,7 +73,7 @@ class TenantsSummaryCard extends StatelessWidget {
                   ),
                   Expanded(
                     child: _buildTenantStat(
-                      '6',
+                      data.totalContractsExpiringSoon.toString(),
                       'Kontrak Akan Habis',
                       Icons.access_time_rounded,
                     ),
@@ -83,7 +85,7 @@ class TenantsSummaryCard extends StatelessWidget {
                   ),
                   Expanded(
                     child: _buildTenantStat(
-                      '3',
+                      data.totalContractsNews.toString(),
                       'Penghuni Baru',
                       Icons.fiber_new_rounded,
                     ),

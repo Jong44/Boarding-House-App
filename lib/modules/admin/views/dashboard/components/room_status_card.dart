@@ -1,7 +1,9 @@
+import 'package:boarding_house_app/modules/admin/features/models/dashboard_room_model.dart';
 import 'package:flutter/material.dart';
 
 class RoomStatusCard extends StatelessWidget {
-  const RoomStatusCard({super.key});
+  final DashboardRoomModel data;
+  const RoomStatusCard({super.key, required this.data});
 
   @override
   Widget build(BuildContext context) {
@@ -40,8 +42,8 @@ class RoomStatusCard extends StatelessWidget {
                       color: const Color(0xFFFF6B35).withOpacity(0.1),
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: const Text(
-                      'Total: 43',
+                    child: Text(
+                      'Total: ${data.totalRooms}',
                       style: TextStyle(
                         color: Color(0xFFFF6B35),
                         fontSize: 12,
@@ -56,7 +58,7 @@ class RoomStatusCard extends StatelessWidget {
                 children: [
                   Expanded(
                     child: _buildRoomStatusItem(
-                      '12',
+                      '${data.vacantRooms}',
                       'Tersedia',
                       Icons.home_rounded,
                       const Color(0xFF4CAF50),
@@ -65,7 +67,7 @@ class RoomStatusCard extends StatelessWidget {
                   const SizedBox(width: 12),
                   Expanded(
                     child: _buildRoomStatusItem(
-                      '28',
+                      '${data.occupiedRooms}',
                       'Terisi',
                       Icons.meeting_room_rounded,
                       const Color(0xFFFF6B35),
@@ -74,7 +76,7 @@ class RoomStatusCard extends StatelessWidget {
                   const SizedBox(width: 12),
                   Expanded(
                     child: _buildRoomStatusItem(
-                      '3',
+                      '${data.maintenanceRooms}',
                       'Maintenance',
                       Icons.build_rounded,
                       const Color(0xFFFFC107),
