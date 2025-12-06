@@ -58,12 +58,15 @@ class _MyAppState extends State<MyApp> {
 
           if (snapshot.hasData && snapshot.data != null) {
             final user = snapshot.data!;
-            final role = user.role ?? 'tenant';
+            final role = user.role?.toLowerCase() ?? 'tenant';
 
-            if (role == 'admin') {
-              return const AdminIndexPage();
-            } else {
-              return const IndexPage();
+            switch (role) {
+              case 'admin':
+                return const AdminIndexPage();
+              case 'owner':
+                return const OwnerIndexPage();
+              default:
+                return const IndexPage();
             }
           }
 

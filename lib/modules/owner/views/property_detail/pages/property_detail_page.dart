@@ -1,6 +1,4 @@
-import 'package:boarding_house_app/modules/owner/views/property_detail/components/contract_info_card.dart';
 import 'package:boarding_house_app/modules/owner/views/property_detail/components/maintenance_history.dart';
-import 'package:boarding_house_app/modules/owner/views/property_detail/components/property_occupancy_chart.dart';
 import 'package:boarding_house_app/modules/owner/views/property_detail/components/property_revenue_chart.dart';
 import 'package:boarding_house_app/modules/owner/views/property_detail/components/property_stats_card.dart';
 import 'package:boarding_house_app/modules/owner/views/property_detail/components/unit_list.dart';
@@ -14,8 +12,6 @@ class PropertyDetailPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isKontrakan = (property['totalUnits'] as int) == 1;
-
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
@@ -41,16 +37,9 @@ class PropertyDetailPage extends StatelessWidget {
           children: [
             PropertyStatsCard(property: property),
             const SizedBox(height: 16),
-            if (isKontrakan) ...[
-              ContractInfoCard(property: property),
-              const SizedBox(height: 16),
-            ] else ...[
-              UnitList(property: property),
-              const SizedBox(height: 16),
-            ],
-            PropertyRevenueChart(property: property),
+            UnitList(property: property),
             const SizedBox(height: 16),
-            PropertyOccupancyChart(property: property),
+            PropertyRevenueChart(property: property),
             const SizedBox(height: 16),
             MaintenanceHistory(property: property),
             const SizedBox(height: 24),

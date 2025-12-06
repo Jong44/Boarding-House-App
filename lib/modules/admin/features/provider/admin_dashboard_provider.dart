@@ -5,7 +5,6 @@ import 'package:boarding_house_app/modules/admin/features/service/payment_servic
 import 'package:boarding_house_app/modules/admin/features/service/room_service.dart';
 import 'package:boarding_house_app/modules/admin/features/state/admin_dashboard_state.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_riverpod/legacy.dart';
 
 final dashboardProvider =
     StateNotifierProvider<DashboardDataNotifier, AdminDashboardState>((ref) {

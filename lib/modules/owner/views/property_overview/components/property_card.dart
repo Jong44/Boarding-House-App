@@ -1,13 +1,14 @@
+import 'package:boarding_house_app/modules/owner/features/models/property_model.dart';
 import 'package:boarding_house_app/modules/owner/views/property_detail/pages/property_detail_page.dart';
 import 'package:flutter/material.dart';
 
 class PropertyCard extends StatelessWidget {
-  final Map<String, dynamic> property;
+  final PropertyModel property;
 
   const PropertyCard({Key? key, required this.property}) : super(key: key);
 
-  String _formatCurrency(int amount) {
-    return amount.toString().replaceAllMapped(
+  String _formatCurrency(double amount) {
+    return amount.toInt().toString().replaceAllMapped(
       RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
       (Match m) => '${m[1]}.',
     );
@@ -28,18 +29,22 @@ class PropertyCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final totalUnits = property['totalUnits'] as int;
-    final occupiedUnits = property['occupiedUnits'] as int;
-    final occupancyRate = totalUnits > 0
-        ? ((occupiedUnits / totalUnits) * 100).toInt()
-        : 0;
-
     return GestureDetector(
       onTap: () {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => PropertyDetailPage(property: property),
+            builder: (context) => PropertyDetailPage(
+              property: {
+                'id': property.id.toString(),
+                'name': property.name,
+                'location': property.address,
+                'totalUnits': property.totalUnits,
+                'occupiedUnits': property.occupiedUnits,
+                'revenue': property.monthlyRevenue.toInt(),
+                'status': property.status,
+              },
+            ),
           ),
         );
       },
@@ -68,7 +73,7 @@ class PropertyCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        property['name'] as String,
+                        property.name,
                         style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -86,7 +91,7 @@ class PropertyCard extends StatelessWidget {
                           const SizedBox(width: 4),
                           Expanded(
                             child: Text(
-                              property['location'] as String,
+                              property.address,
                               style: const TextStyle(
                                 fontSize: 13,
                                 color: Color(0xFF757575),
@@ -106,17 +111,15 @@ class PropertyCard extends StatelessWidget {
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: _getStatusColor(
-                      property['status'] as String,
-                    ).withAlpha(26),
+                    color: _getStatusColor(property.status).withAlpha(26),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
-                    property['status'] as String,
+                    property.status,
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: _getStatusColor(property['status'] as String),
+                      color: _getStatusColor(property.status),
                     ),
                   ),
                 ),
@@ -129,14 +132,14 @@ class PropertyCard extends StatelessWidget {
                   child: _buildInfoItem(
                     icon: Icons.meeting_room_rounded,
                     label: 'Total Unit',
-                    value: '$totalUnits unit',
+                    value: '${property.totalUnits} unit',
                   ),
                 ),
                 Expanded(
                   child: _buildInfoItem(
                     icon: Icons.people_rounded,
                     label: 'Occupancy',
-                    value: '$occupancyRate%',
+                    value: '${property.occupancyRate}%',
                   ),
                 ),
               ],
@@ -160,7 +163,7 @@ class PropertyCard extends StatelessWidget {
                     style: TextStyle(fontSize: 14, color: Colors.white),
                   ),
                   Text(
-                    'Rp ${_formatCurrency(property['revenue'] as int)}',
+                    'Rp ${_formatCurrency(property.monthlyRevenue)}',
                     style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,

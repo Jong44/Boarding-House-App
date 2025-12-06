@@ -1,19 +1,26 @@
+import 'package:boarding_house_app/modules/owner/features/provider/owner_dashboard_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class InvoiceOverdueCard extends StatelessWidget {
+class InvoiceOverdueCard extends ConsumerWidget {
   const InvoiceOverdueCard({Key? key}) : super(key: key);
 
-  String _formatCurrency(int amount) {
-    return amount.toString().replaceAllMapped(
+  String _formatCurrency(double amount) {
+    return amount.toInt().toString().replaceAllMapped(
       RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
       (Match m) => '${m[1]}.',
     );
   }
 
   @override
-  Widget build(BuildContext context) {
-    const overdueCount = 7;
-    const overdueAmount = 14000000; // Rp 14 juta
+  Widget build(BuildContext context, WidgetRef ref) {
+    final dashboardState = ref.watch(ownerDashboardProvider);
+    final isLoading = dashboardState.isLoadingInvoice;
+    final invoiceData = dashboardState.invoiceData;
+    final error = dashboardState.errorInvoice;
+
+    final overdueCount = invoiceData?.overdueCount ?? 0;
+    final overdueAmount = invoiceData?.overdueAmount ?? 0;
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -63,7 +70,7 @@ class InvoiceOverdueCard extends StatelessWidget {
                   ),
                 ],
               ),
-              if (overdueCount > 0)
+              if (!isLoading && error == null && overdueCount > 0)
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 10,
@@ -85,52 +92,76 @@ class InvoiceOverdueCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 20),
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Jumlah Invoice Terlambat',
-                      style: TextStyle(fontSize: 13, color: Color(0xFF757575)),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      '$overdueCount invoice',
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFFF44336),
-                      ),
-                    ),
-                  ],
+          if (isLoading)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(20.0),
+                child: CircularProgressIndicator(),
+              ),
+            )
+          else if (error != null)
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Text(
+                  'Gagal memuat data',
+                  style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                 ),
               ),
-              Container(width: 1, height: 50, color: const Color(0xFFE0E0E0)),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Total Nilai Overdue',
-                      style: TextStyle(fontSize: 13, color: Color(0xFF757575)),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Rp ${_formatCurrency(overdueAmount)}',
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFFF44336),
+            )
+          else
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Jumlah Invoice Terlambat',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFF757575),
+                        ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 8),
+                      Text(
+                        '$overdueCount invoice',
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFFF44336),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          ),
+                Container(width: 1, height: 50, color: const Color(0xFFE0E0E0)),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Total Nilai Overdue',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFF757575),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Rp ${_formatCurrency(overdueAmount)}',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFFF44336),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
         ],
       ),
     );
