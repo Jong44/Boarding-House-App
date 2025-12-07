@@ -6,6 +6,7 @@ import 'package:boarding_house_app/modules/owner/features/service/owner_room_ser
 import 'package:boarding_house_app/modules/owner/features/service/revenue_chart_service.dart';
 import 'package:boarding_house_app/modules/owner/features/state/owner_dashboard_state.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 
 final ownerDashboardProvider =
     StateNotifierProvider<OwnerDashboardNotifier, OwnerDashboardState>((ref) {

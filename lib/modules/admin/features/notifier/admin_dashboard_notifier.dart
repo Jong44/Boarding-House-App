@@ -3,6 +3,7 @@ import 'package:boarding_house_app/modules/admin/features/service/maintenance_se
 import 'package:boarding_house_app/modules/admin/features/service/payment_service.dart';
 import 'package:boarding_house_app/modules/admin/features/service/room_service.dart';
 import 'package:boarding_house_app/modules/admin/features/state/admin_dashboard_state.dart';
+import 'package:state_notifier/state_notifier.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class DashboardDataNotifier extends StateNotifier<AdminDashboardState> {
@@ -84,7 +85,6 @@ class DashboardDataNotifier extends StateNotifier<AdminDashboardState> {
       );
     }
   }
-  
 
   Future<void> refreshAll() async {
     await Future.wait([

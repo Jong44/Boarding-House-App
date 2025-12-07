@@ -2,6 +2,7 @@ import 'package:boarding_house_app/modules/owner/features/notifier/property_noti
 import 'package:boarding_house_app/modules/owner/features/service/property_service.dart';
 import 'package:boarding_house_app/modules/owner/features/state/property_state.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 
 final propertyServiceProvider = Provider((ref) => PropertyService());
 
