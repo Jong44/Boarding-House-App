@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
 class HeaderHome extends StatelessWidget {
-  const HeaderHome({super.key});
+  final String userName;
+
+  const HeaderHome({super.key, required this.userName});
 
   @override
   Widget build(BuildContext context) {
@@ -23,16 +25,16 @@ class HeaderHome extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 12),
-            const Column(
+            Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Selamat pagi 👋',
+                  'Halloo!! 👋',
                   style: TextStyle(fontSize: 14, color: Color(0xFF757575)),
                 ),
                 SizedBox(height: 2),
                 Text(
-                  'Budi Santoso',
+                  userName,
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,

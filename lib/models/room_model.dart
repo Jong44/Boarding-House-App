@@ -18,7 +18,7 @@ class RoomModel {
       id: map['id'] as int?,
       propertyId: map['property_id'] as int,
       roomTypeId: map['room_type_id'] as int,
-      description: map['description'] as String,
+      description: map['description'] as String?,
       status: map['status'] as String,
     );
   }

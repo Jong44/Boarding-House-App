@@ -6,15 +6,11 @@ class PaymentService {
   AuthService authService = AuthService();
 
   Future<Map<String, dynamic>> getPaymentSummary() async {
-    final user = await authService.getCurrentUser();
-    final userId = user?.id;
-
     final response = await supabase
         .from('payments')
         .select(
           '*, invoices:invoice_id (contracts:contract_id (rooms:room_id (properties:property_id (owner_id)))))',
-        )
-        .eq('invoices.contracts.rooms.properties.owner_id', userId ?? "");
+        );
 
     final data = (response as List)
         .map((e) => e as Map<String, dynamic>)

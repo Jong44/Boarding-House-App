@@ -7,13 +7,9 @@ class RoomService {
   AuthService authService = AuthService();
 
   Future<DashboardRoomModel> getRoomOverview() async {
-    final user = await authService.getCurrentUser();
-    final userId = user?.id;
-
     final response = await supabase
         .from('rooms')
-        .select('*, properties:property_id (owner_id)')
-        .eq('properties.owner_id', userId ?? "");
+        .select('*, properties:property_id (owner_id)');
 
     final data = (response as List)
         .map((e) => e as Map<String, dynamic>)

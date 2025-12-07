@@ -15,19 +15,30 @@ class AdminTenantsPage extends ConsumerStatefulWidget {
 class _AdminTenantsPageState extends ConsumerState<AdminTenantsPage> {
   final TextEditingController _searchController = TextEditingController();
 
+  void _onSearchChanged() {
+    ref
+        .read(adminTenantsProvider.notifier)
+        .filterTenants(_searchController.text);
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(adminTenantsProvider);
 
-    if (state.isLoading) {
-      return const Center(child: CircularProgressIndicator());
+    if (_searchController.text.isEmpty &&
+        state.contracts['contracts'] == null) {
+      if (state.isLoading) {
+        return const Center(child: CircularProgressIndicator());
+      }
     }
 
     if (state.error != null) {
       return Center(child: Text(state.error!));
     }
 
-    final tenants = state.contracts['contracts'] ?? [];
+    final tenants = _searchController.text.isEmpty
+        ? state.contracts['contracts'] ?? []
+        : state.contractsFiltered;
 
     return Scaffold(
       body: SafeArea(
@@ -48,6 +59,7 @@ class _AdminTenantsPageState extends ConsumerState<AdminTenantsPage> {
                       ),
                       child: TextField(
                         controller: _searchController,
+                        onChanged: (value) => _onSearchChanged(),
                         decoration: const InputDecoration(
                           hintText: 'Cari nama, nomor HP, nomor kamar...',
                           prefixIcon: Icon(
@@ -77,7 +89,7 @@ class _AdminTenantsPageState extends ConsumerState<AdminTenantsPage> {
                 children: [
                   Expanded(
                     child: AdminStatCardListTenants(
-                      label: '28',
+                      label: state.contracts['activeContracts'].toString(),
                       value: 'Aktif',
                       bgColor: const Color(0xFFD1FAE5),
                       textColor: const Color(0xFF059669),
@@ -86,7 +98,8 @@ class _AdminTenantsPageState extends ConsumerState<AdminTenantsPage> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: AdminStatCardListTenants(
-                      label: '5',
+                      label: state.contracts['expiringSoonContracts']
+                          .toString(),
                       value: 'Segera Berakhir',
                       bgColor: const Color(0xFFFED7AA),
                       textColor: const Color(0xFFEA580C),
@@ -95,7 +108,7 @@ class _AdminTenantsPageState extends ConsumerState<AdminTenantsPage> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: AdminStatCardListTenants(
-                      label: '3',
+                      label: state.contracts['overdueContracts'].toString(),
                       value: 'Menunggak',
                       bgColor: const Color(0xFFFEE2E2),
                       textColor: const Color(0xFFDC2626),
@@ -106,16 +119,18 @@ class _AdminTenantsPageState extends ConsumerState<AdminTenantsPage> {
             ),
             // Tenant List
             Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                itemCount: tenants.length,
-                itemBuilder: (context, index) {
-                  return AdminTenantCard(tenant: tenants[index]);
-                },
-              ),
+              child: tenants.isEmpty
+                  ? const Center(child: Text('Tidak ada data penyewa.'))
+                  : ListView.builder(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      itemCount: tenants.length,
+                      itemBuilder: (context, index) {
+                        return AdminTenantCard(tenant: tenants[index]);
+                      },
+                    ),
             ),
           ],
         ),

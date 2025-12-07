@@ -1,13 +1,22 @@
+import 'package:boarding_house_app/models/contract_model.dart';
+import 'package:boarding_house_app/models/room_model.dart';
+import 'package:boarding_house_app/modules/admin/features/provider/admin_dashboard_provider.dart';
+import 'package:boarding_house_app/modules/penghuni/features/models/tenant_create_ticket_request.dart';
+import 'package:boarding_house_app/modules/penghuni/features/notifier/tenant_ticket_action_notifier.dart';
+import 'package:boarding_house_app/modules/penghuni/features/provider/tenant_dashboard_provider.dart';
+import 'package:boarding_house_app/modules/penghuni/features/provider/tenant_ticket_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class CreateTicketPage extends StatefulWidget {
-  const CreateTicketPage({Key? key}) : super(key: key);
+class CreateTicketPage extends ConsumerStatefulWidget {
+  final ContractModel contract;
+  const CreateTicketPage({Key? key, required this.contract}) : super(key: key);
 
   @override
-  State<CreateTicketPage> createState() => _CreateTicketPageState();
+  ConsumerState<CreateTicketPage> createState() => _CreateTicketPageState();
 }
 
-class _CreateTicketPageState extends State<CreateTicketPage> {
+class _CreateTicketPageState extends ConsumerState<CreateTicketPage> {
   final _formKey = GlobalKey<FormState>();
   final _descriptionController = TextEditingController();
   final List<String> _attachments = [];
@@ -18,8 +27,40 @@ class _CreateTicketPageState extends State<CreateTicketPage> {
     super.dispose();
   }
 
+  Future<void> _submitTicket() async {
+    if (_formKey.currentState!.validate()) {
+      ref
+          .read(tenantTicketActionNotifierProvider.notifier)
+          .createTicket(
+            request: TenantCreateTicketRequest(
+              roomId: widget.contract.roomId!,
+              description: _descriptionController.text,
+            ),
+          );
+
+      ref.read(tenantDashboardProvider.notifier).refreshAll();
+
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Tiket Berhasil Dibuat'),
+          backgroundColor: Color(0xFF4CAF50),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final state = ref.watch(tenantTicketActionNotifierProvider);
+
+    if (state.isLoading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    if (state.hasError) {
+      return Scaffold(body: Center(child: Text('Error: ${state.error}')));
+    }
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
@@ -83,11 +124,11 @@ class _CreateTicketPageState extends State<CreateTicketPage> {
                             ),
                           ),
                           const SizedBox(width: 12),
-                          const Column(
+                          Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Room A12',
+                                "Kamar ${widget.contract.roomId}",
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
@@ -96,7 +137,7 @@ class _CreateTicketPageState extends State<CreateTicketPage> {
                               ),
                               SizedBox(height: 4),
                               Text(
-                                'Green Valley Residence',
+                                widget.contract.propertyDetails!.name,
                                 style: TextStyle(
                                   fontSize: 13,
                                   color: Color(0xFF757575),
@@ -164,146 +205,6 @@ class _CreateTicketPageState extends State<CreateTicketPage> {
                 ),
               ),
 
-              const SizedBox(height: 12),
-
-              // Attachments
-              Container(
-                width: double.infinity,
-                color: Colors.white,
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Attachments',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF1A1A1A),
-                              ),
-                            ),
-                            SizedBox(height: 4),
-                            Text(
-                              'Optional • Max 3 photos',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Color(0xFF757575),
-                              ),
-                            ),
-                          ],
-                        ),
-                        if (_attachments.length < 3)
-                          TextButton.icon(
-                            onPressed: () {
-                              // Simulate adding photo
-                              setState(() {
-                                _attachments.add(
-                                  'photo_${_attachments.length + 1}.jpg',
-                                );
-                              });
-                            },
-                            icon: const Icon(
-                              Icons.add_photo_alternate_outlined,
-                              size: 20,
-                            ),
-                            label: const Text('Add Photo'),
-                            style: TextButton.styleFrom(
-                              foregroundColor: const Color(0xFFFF6B2C),
-                            ),
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    if (_attachments.isEmpty)
-                      Container(
-                        padding: const EdgeInsets.all(32),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF5F5F5),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: Colors.grey[300]!,
-                            width: 2,
-                            style: BorderStyle.solid,
-                          ),
-                        ),
-                        child: Center(
-                          child: Column(
-                            children: [
-                              Icon(
-                                Icons.image_outlined,
-                                size: 48,
-                                color: Colors.grey[400],
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'No photos added',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.grey[600],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      )
-                    else
-                      Wrap(
-                        spacing: 12,
-                        runSpacing: 12,
-                        children: _attachments.map((photo) {
-                          return Stack(
-                            children: [
-                              Container(
-                                width: 100,
-                                height: 100,
-                                decoration: BoxDecoration(
-                                  color: Colors.grey[300],
-                                  borderRadius: BorderRadius.circular(12),
-                                  image: DecorationImage(
-                                    image: NetworkImage(
-                                      'https://picsum.photos/200?random=${_attachments.indexOf(photo)}',
-                                    ),
-                                    fit: BoxFit.cover,
-                                  ),
-                                ),
-                              ),
-                              Positioned(
-                                top: 4,
-                                right: 4,
-                                child: GestureDetector(
-                                  onTap: () {
-                                    setState(() {
-                                      _attachments.remove(photo);
-                                    });
-                                  },
-                                  child: Container(
-                                    padding: const EdgeInsets.all(4),
-                                    decoration: const BoxDecoration(
-                                      color: Colors.red,
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: const Icon(
-                                      Icons.close,
-                                      color: Colors.white,
-                                      size: 16,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          );
-                        }).toList(),
-                      ),
-                  ],
-                ),
-              ),
-
               const SizedBox(height: 80),
             ],
           ),
@@ -324,16 +225,7 @@ class _CreateTicketPageState extends State<CreateTicketPage> {
         child: SafeArea(
           child: ElevatedButton(
             onPressed: () {
-              if (_formKey.currentState!.validate()) {
-                // Submit ticket
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Ticket created successfully'),
-                    backgroundColor: Color(0xFF4CAF50),
-                  ),
-                );
-              }
+              _submitTicket();
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFFF6B2C),

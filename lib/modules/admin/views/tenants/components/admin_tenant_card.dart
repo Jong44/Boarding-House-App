@@ -71,6 +71,25 @@ class AdminTenantCard extends StatelessWidget {
     }
   }
 
+  String _getStatusBasedOnDates(
+    DateTime startDate,
+    DateTime endDate,
+    String status,
+  ) {
+    if (status != 'active') {
+      return _getStatusText(status);
+    }
+    final now = DateTime.now();
+    if (now.isBefore(endDate) &&
+        endDate.isBefore(now.add(const Duration(days: 7)))) {
+      return 'ending_soon';
+    } else if (now.isAfter(endDate)) {
+      return 'ended';
+    } else {
+      return 'active';
+    }
+  }
+
   String _formatCurrency(int amount) {
     return 'Rp ${amount.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}';
   }
@@ -97,7 +116,7 @@ class AdminTenantCard extends StatelessWidget {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => const AdminDetailTenantPage(),
+                builder: (context) => AdminDetailTenantPage(contract: tenant),
               ),
             );
           },
@@ -107,16 +126,6 @@ class AdminTenantCard extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFED7AA),
-                    borderRadius: BorderRadius.circular(24),
-                  ),
-                  child: const Icon(Icons.person, color: Color(0xFFFF5722)),
-                ),
-                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -130,7 +139,7 @@ class AdminTenantCard extends StatelessWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  tenant.id.toString(),
+                                  tenant.tenantDetails?.fullName ?? '',
                                   style: const TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w600,
@@ -146,7 +155,7 @@ class AdminTenantCard extends StatelessWidget {
                                     ),
                                     const SizedBox(width: 4),
                                     Text(
-                                      'Room ${tenant.id} (${tenant.id})',
+                                      'Kamar ${tenant.roomDetails?.id ?? ''}',
                                       style: const TextStyle(
                                         fontSize: 13,
                                         color: Color(0xFF6B7280),
@@ -167,7 +176,13 @@ class AdminTenantCard extends StatelessWidget {
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(
-                              _getStatusText(tenant.status),
+                              _getStatusText(
+                                _getStatusBasedOnDates(
+                                  tenant.startDate,
+                                  tenant.endDate,
+                                  tenant.status,
+                                ),
+                              ),
                               style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w600,
@@ -201,17 +216,6 @@ class AdminTenantCard extends StatelessWidget {
                                   style: const TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  '• ${_getPaymentStatusText(tenant.status)}',
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600,
-                                    color: _getPaymentStatusColor(
-                                      tenant.status,
-                                    ),
                                   ),
                                 ),
                               ],

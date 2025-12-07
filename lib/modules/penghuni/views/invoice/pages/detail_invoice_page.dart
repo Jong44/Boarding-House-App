@@ -1,19 +1,25 @@
 // Invoice Detail Page
 import 'dart:io';
 
+import 'package:boarding_house_app/models/invoice_model.dart';
 import 'package:boarding_house_app/modules/penghuni/views/invoice/components/payment_modal.dart';
+import 'package:boarding_house_app/utils/format_date.dart';
 import 'package:flutter/material.dart';
 
 class InvoiceDetailPage extends StatelessWidget {
-  final Map<String, dynamic> invoice;
+  final InvoiceModel invoice;
 
   const InvoiceDetailPage({Key? key, required this.invoice}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    final status = invoice['status'];
-    final total = invoice['total'] as int;
-    final paid = invoice['paid'] as int;
+    final status = invoice.status;
+    final total = invoice.totalAmount;
+    final paid = invoice.payments != null
+        ? invoice.payments!
+              .where((p) => p.invoiceId == invoice.id)
+              .fold<double>(0.0, (sum, p) => sum + p.amount)
+        : 0.0;
     final remaining = total - paid;
 
     Color statusColor;
@@ -63,7 +69,7 @@ class InvoiceDetailPage extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    invoice['code'],
+                    'Kamar ${invoice.id.toString()}',
                     style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
@@ -92,13 +98,6 @@ class InvoiceDetailPage extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 12),
-                      Text(
-                        invoice['period'],
-                        style: const TextStyle(
-                          fontSize: 14,
-                          color: Color(0xFF757575),
-                        ),
-                      ),
                     ],
                   ),
                 ],
@@ -124,20 +123,29 @@ class InvoiceDetailPage extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  _buildInfoRow('Room', invoice['room']),
+                  _buildInfoRow(
+                    'Room',
+                    invoice.contract?.roomDetails?.id.toString() ?? 'N/A',
+                  ),
                   const SizedBox(height: 12),
-                  _buildInfoRow('Due Date', invoice['dueDate']),
+                  _buildInfoRow('Due Date', formatDate(invoice.dueDate)),
                   const SizedBox(height: 12),
-                  _buildInfoRow('Total Amount', 'Rp ${_formatCurrency(total)}'),
+                  _buildInfoRow(
+                    'Total Amount',
+                    'Rp ${_formatCurrency(total.toInt())}',
+                  ),
                   if (paid > 0) ...[
                     const SizedBox(height: 12),
-                    _buildInfoRow('Amount Paid', 'Rp ${_formatCurrency(paid)}'),
+                    _buildInfoRow(
+                      'Amount Paid',
+                      'Rp ${_formatCurrency(paid.toInt())}',
+                    ),
                   ],
                   if (remaining > 0) ...[
                     const SizedBox(height: 12),
                     _buildInfoRow(
                       'Remaining Balance',
-                      'Rp ${_formatCurrency(remaining)}',
+                      'Rp ${_formatCurrency(remaining.toInt())}',
                       valueColor: const Color(0xFFFF6B2C),
                       bold: true,
                     ),
@@ -165,19 +173,17 @@ class InvoiceDetailPage extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
                   if (paid > 0) ...[
-                    _buildPaymentHistoryItem(
-                      '10 Jan 2025',
-                      'Bank Transfer',
-                      600000,
-                      'Success',
-                    ),
-                    if (status == 'Paid')
-                      _buildPaymentHistoryItem(
-                        '15 Jan 2025',
-                        'QRIS',
-                        900000,
-                        'Success',
-                      ),
+                    ...invoice.payments!
+                        .where((p) => p.invoiceId == invoice.id)
+                        .map(
+                          (payment) => _buildPaymentHistoryItem(
+                            formatDate(payment.createdAt),
+                            payment.method,
+                            payment.amount.toInt(),
+                            payment.status,
+                          ),
+                        )
+                        .toList(),
                   ] else
                     Center(
                       child: Padding(
@@ -191,42 +197,6 @@ class InvoiceDetailPage extends StatelessWidget {
                         ),
                       ),
                     ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 12),
-
-            // Additional Info
-            Container(
-              width: double.infinity,
-              color: Colors.white,
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Additional Information',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF1A1A1A),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  _buildInfoRow('Generated Date', '1 Jan 2025'),
-                  const SizedBox(height: 12),
-                  _buildInfoRow('Created By', 'System / Admin'),
-                  const SizedBox(height: 12),
-                  const Text(
-                    'Notes',
-                    style: TextStyle(fontSize: 13, color: Color(0xFF757575)),
-                  ),
-                  const SizedBox(height: 4),
-                  const Text(
-                    'Denda dikenakan karena pembayaran terlambat 5 hari dari tanggal jatuh tempo.',
-                    style: TextStyle(fontSize: 14, color: Color(0xFF1A1A1A)),
-                  ),
                 ],
               ),
             ),
@@ -251,7 +221,29 @@ class InvoiceDetailPage extends StatelessWidget {
               child: SafeArea(
                 child: ElevatedButton(
                   onPressed: () {
-                    _showPaymentModal(context, remaining);
+                    if (remaining <= 0) {
+                      showDialog(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text('Payment Not Required'),
+                          content: const Text(
+                            'This invoice is already fully paid.',
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: const Text('OK'),
+                            ),
+                          ],
+                        ),
+                      );
+                      return;
+                    }
+                    _showPaymentModal(
+                      context,
+                      remaining.toInt(),
+                      invoice.id ?? 0,
+                    );
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFFF6B2C),
@@ -408,12 +400,12 @@ class InvoiceDetailPage extends StatelessWidget {
     );
   }
 
-  void _showPaymentModal(BuildContext context, int amount) {
+  void _showPaymentModal(BuildContext context, int amount, int invoiceId) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => PaymentModal(amount: amount),
+      builder: (context) => PaymentModal(invoiceId: invoiceId, amount: amount),
     );
   }
 

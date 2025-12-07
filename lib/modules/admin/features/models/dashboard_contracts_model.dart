@@ -11,9 +11,10 @@ class DashboardContractsModel {
 
   factory DashboardContractsModel.fromMap(Map<String, dynamic> map) {
     return DashboardContractsModel(
-      totalContractsActive: map['total_contracts_active'] as int,
-      totalContractsExpiringSoon: map['total_contracts_expiring_soon'] as int,
-      totalContractsNews: map['total_contracts_news'] as int,
+      totalContractsActive: map['total_contracts_active'] as int? ?? 0,
+      totalContractsExpiringSoon:
+          map['total_contracts_expiring_soon'] as int? ?? 0,
+      totalContractsNews: map['total_contracts_news'] as int? ?? 0,
     );
   }
 

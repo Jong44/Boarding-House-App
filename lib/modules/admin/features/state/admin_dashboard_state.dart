@@ -1,3 +1,4 @@
+import 'package:boarding_house_app/models/properties_model.dart';
 import 'package:boarding_house_app/modules/admin/features/models/dashboard_contracts_model.dart';
 import 'package:boarding_house_app/modules/admin/features/models/dashboard_room_model.dart';
 
@@ -6,16 +7,19 @@ class AdminDashboardState {
   final bool isLoadingRooms;
   final bool isLoadingPayments;
   final bool isLoadingMaintenance;
+  final bool isLoadingProperties;
 
   final DashboardContractsModel? contracts;
   final DashboardRoomModel? rooms;
   final Map<String, dynamic>? payments;
   final Map<String, dynamic>? maintenance;
+  final List<PropertiesModel>? properties;
 
   final String? errorContracts;
   final String? errorRooms;
   final String? errorPayments;
   final String? errorMaintenance;
+  final String? errorProperties;
 
   const AdminDashboardState({
     this.isLoadingContracts = false,
@@ -30,6 +34,9 @@ class AdminDashboardState {
     this.isLoadingMaintenance = false,
     this.maintenance,
     this.errorMaintenance,
+    this.properties,
+    this.errorProperties,
+    this.isLoadingProperties = false,
   });
 
   AdminDashboardState copyWith({
@@ -45,6 +52,9 @@ class AdminDashboardState {
     bool? isLoadingMaintenance,
     Map<String, dynamic>? maintenance,
     String? errorMaintenance,
+    List<PropertiesModel>? properties,
+    String? errorProperties,
+    bool? isLoadingProperties,
   }) {
     return AdminDashboardState(
       isLoadingContracts: isLoadingContracts ?? this.isLoadingContracts,
@@ -59,6 +69,9 @@ class AdminDashboardState {
       isLoadingMaintenance: isLoadingMaintenance ?? this.isLoadingMaintenance,
       maintenance: maintenance ?? this.maintenance,
       errorMaintenance: errorMaintenance ?? this.errorMaintenance,
+      properties: properties ?? this.properties,
+      errorProperties: errorProperties ?? this.errorProperties,
+      isLoadingProperties: isLoadingProperties ?? this.isLoadingProperties,
     );
   }
 }

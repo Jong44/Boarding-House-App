@@ -1,7 +1,6 @@
 import 'package:boarding_house_app/models/app_user.dart';
 import 'package:boarding_house_app/modules/admin/shared/admin_index_page.dart';
 import 'package:boarding_house_app/modules/auth/pages/login_page.dart';
-import 'package:boarding_house_app/modules/owner/shared/owner_index_page.dart';
 import 'package:boarding_house_app/modules/penghuni/shared/index_page.dart';
 import 'package:boarding_house_app/services/auth_service.dart';
 import 'package:flutter/material.dart';

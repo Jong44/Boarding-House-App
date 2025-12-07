@@ -70,4 +70,28 @@ class DashboardDataNotifier extends StateNotifier<AdminDashboardState> {
       );
     }
   }
+
+  Future<void> loadProperties() async {
+    state = state.copyWith(isLoadingProperties: true);
+
+    try {
+      final result = await contractService.getAllProperties();
+      state = state.copyWith(isLoadingProperties: false, properties: result);
+    } catch (e) {
+      state = state.copyWith(
+        isLoadingProperties: false,
+        errorProperties: e.toString(),
+      );
+    }
+  }
+  
+
+  Future<void> refreshAll() async {
+    await Future.wait([
+      loadContracts(),
+      loadRooms(),
+      loadPayments(),
+      loadMaintenance(),
+    ]);
+  }
 }

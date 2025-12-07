@@ -20,10 +20,11 @@ final dashboardProvider =
           paymentService: paymentService,
           maintenanceService: maintenanceService,
         )
-        ..loadContracts() // auto fetch on init
-        ..loadRooms() // auto fetch on init
-        ..loadPayments() // auto fetch on init
-        ..loadMaintenance(); // auto fetch on init
+        ..loadContracts()
+        ..loadRooms()
+        ..loadPayments()
+        ..loadMaintenance()
+        ..loadProperties();
     });
 
 final contractServiceProvider = Provider((ref) => ContractService());
