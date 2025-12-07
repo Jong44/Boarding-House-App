@@ -4,7 +4,7 @@ import 'package:boarding_house_app/models/room_model.dart';
 import 'package:boarding_house_app/modules/admin/features/models/create_tenant_request_model.dart';
 import 'package:boarding_house_app/modules/admin/features/service/contract_service.dart';
 import 'package:boarding_house_app/modules/admin/features/state/admin_contract_state.dart';
-import 'package:flutter_riverpod/legacy.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class AdminTenantsNotifier extends StateNotifier<AdminContractState> {
   final ContractService contractService;

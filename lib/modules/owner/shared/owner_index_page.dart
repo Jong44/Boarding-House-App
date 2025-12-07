@@ -1,6 +1,8 @@
+import 'package:boarding_house_app/modules/auth/pages/login_page.dart';
 import 'package:boarding_house_app/modules/owner/views/dashboard/pages/owner_dashboard_page.dart';
 import 'package:boarding_house_app/modules/owner/views/property_overview/pages/property_overview_page.dart';
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class OwnerIndexPage extends StatefulWidget {
   const OwnerIndexPage({Key? key}) : super(key: key);
@@ -14,11 +16,7 @@ class _OwnerIndexPageState extends State<OwnerIndexPage> {
 
   final List<DrawerMenuItem> _menuItems = [
     DrawerMenuItem(icon: Icons.dashboard_rounded, title: 'Dashboard', index: 0),
-    DrawerMenuItem(
-      icon: Icons.apartment_rounded,
-      title: 'Properties',
-      index: 1,
-    ),
+    DrawerMenuItem(icon: Icons.apartment_rounded, title: 'Property', index: 1),
     DrawerMenuItem(
       icon: Icons.person_rounded,
       title: 'Owner Profile',
@@ -93,44 +91,49 @@ class _OwnerIndexPageState extends State<OwnerIndexPage> {
           end: Alignment.bottomRight,
         ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 70,
-            height: 70,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(35),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withAlpha(26),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
+      child: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 70,
+              height: 70,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(35),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withAlpha(26),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: const Icon(
+                Icons.business_center_rounded,
+                color: Color(0xFFFF6B35),
+                size: 35,
+              ),
             ),
-            child: const Icon(
-              Icons.business_center_rounded,
-              color: Color(0xFFFF6B35),
-              size: 35,
+            const SizedBox(height: 16),
+            const Text(
+              'Property Owner',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            'Property Owner',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
+            const SizedBox(height: 4),
+            Text(
+              'owner@property.com',
+              style: TextStyle(
+                color: Colors.white.withAlpha(230),
+                fontSize: 14,
+              ),
             ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'owner@property.com',
-            style: TextStyle(color: Colors.white.withAlpha(230), fontSize: 14),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -231,9 +234,14 @@ class _OwnerIndexPageState extends State<OwnerIndexPage> {
             ),
           ),
           ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              // Handle logout logic
+            onPressed: () async {
+              final navigator = Navigator.of(context);
+              navigator.pop();
+              await Supabase.instance.client.auth.signOut();
+              navigator.pushAndRemoveUntil(
+                MaterialPageRoute(builder: (context) => const LoginPage()),
+                (route) => false,
+              );
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFFF6B35),

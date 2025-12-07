@@ -1,13 +1,20 @@
+import 'package:boarding_house_app/modules/owner/features/provider/owner_dashboard_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class RoomStatusCard extends StatelessWidget {
+class RoomStatusCard extends ConsumerWidget {
   const RoomStatusCard({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
-    const occupiedRooms = 86;
-    const vacantRooms = 14;
-    const maintenanceRooms = 2;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final dashboardState = ref.watch(ownerDashboardProvider);
+    final isLoading = dashboardState.isLoadingRoom;
+    final roomData = dashboardState.roomData;
+    final error = dashboardState.errorRoom;
+
+    final occupiedRooms = roomData?.occupiedRooms ?? 0;
+    final vacantRooms = roomData?.vacantRooms ?? 0;
+    final maintenanceRooms = roomData?.maintenanceRooms ?? 0;
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -51,26 +58,78 @@ class RoomStatusCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 20),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              // If screen is narrow, use Column instead of Row
-              if (constraints.maxWidth < 320) {
-                return Column(
+          if (isLoading)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(20.0),
+                child: CircularProgressIndicator(),
+              ),
+            )
+          else if (error != null)
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Text(
+                  'Gagal memuat data',
+                  style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                ),
+              ),
+            )
+          else
+            LayoutBuilder(
+              builder: (context, constraints) {
+                if (constraints.maxWidth < 320) {
+                  return Column(
+                    children: [
+                      Expanded(
+                        child: _buildStatusItem(
+                          icon: Icons.check_circle_rounded,
+                          label: 'Terisi',
+                          count: occupiedRooms,
+                          color: const Color(0xFF4CAF50),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Expanded(
+                        child: _buildStatusItem(
+                          icon: Icons.radio_button_unchecked,
+                          label: 'Kosong',
+                          count: vacantRooms,
+                          color: const Color(0xFF9E9E9E),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Expanded(
+                        child: _buildStatusItem(
+                          icon: Icons.build_circle_rounded,
+                          label: 'Maintenance',
+                          count: maintenanceRooms,
+                          color: const Color(0xFFFF9800),
+                        ),
+                      ),
+                    ],
+                  );
+                }
+                return Row(
                   children: [
-                    _buildStatusItem(
-                      icon: Icons.check_circle_rounded,
-                      label: 'Terisi',
-                      count: occupiedRooms,
-                      color: const Color(0xFF4CAF50),
+                    Expanded(
+                      child: _buildStatusItem(
+                        icon: Icons.check_circle_rounded,
+                        label: 'Terisi',
+                        count: occupiedRooms,
+                        color: const Color(0xFF4CAF50),
+                      ),
                     ),
-                    const SizedBox(height: 12),
-                    _buildStatusItem(
-                      icon: Icons.radio_button_unchecked,
-                      label: 'Kosong',
-                      count: vacantRooms,
-                      color: const Color(0xFF9E9E9E),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _buildStatusItem(
+                        icon: Icons.radio_button_unchecked,
+                        label: 'Kosong',
+                        count: vacantRooms,
+                        color: const Color(0xFF9E9E9E),
+                      ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(width: 12),
                     _buildStatusItem(
                       icon: Icons.build_circle_rounded,
                       label: 'Maintenance',
@@ -79,40 +138,8 @@ class RoomStatusCard extends StatelessWidget {
                     ),
                   ],
                 );
-              }
-              // For wider screens, use Row
-              return Row(
-                children: [
-                  Expanded(
-                    child: _buildStatusItem(
-                      icon: Icons.check_circle_rounded,
-                      label: 'Terisi',
-                      count: occupiedRooms,
-                      color: const Color(0xFF4CAF50),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildStatusItem(
-                      icon: Icons.radio_button_unchecked,
-                      label: 'Kosong',
-                      count: vacantRooms,
-                      color: const Color(0xFF9E9E9E),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildStatusItem(
-                      icon: Icons.build_circle_rounded,
-                      label: 'Maintenance',
-                      count: maintenanceRooms,
-                      color: const Color(0xFFFF9800),
-                    ),
-                  ),
-                ],
-              );
-            },
-          ),
+              },
+            ),
         ],
       ),
     );

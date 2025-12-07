@@ -1,77 +1,40 @@
+import 'package:boarding_house_app/modules/owner/features/service/unit_service.dart';
 import 'package:flutter/material.dart';
 
-class UnitList extends StatelessWidget {
+class UnitList extends StatefulWidget {
   final Map<String, dynamic> property;
 
   const UnitList({Key? key, required this.property}) : super(key: key);
 
-  Color _getStatusColor(String status) {
-    switch (status) {
-      case 'Terisi':
-        return const Color(0xFF4CAF50);
-      case 'Kosong':
-        return const Color(0xFF9E9E9E);
-      case 'Maintenance':
-        return const Color(0xFFFF9800);
-      default:
-        return const Color(0xFF9E9E9E);
+  @override
+  State<UnitList> createState() => _UnitListState();
+}
+
+class _UnitListState extends State<UnitList> {
+  final UnitService _unitService = UnitService();
+  List<UnitModel> _units = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUnits();
+  }
+
+  Future<void> _loadUnits() async {
+    final propertyId = widget.property['id'];
+    final units = await _unitService.getUnitsForProperty(propertyId);
+
+    if (mounted) {
+      setState(() {
+        _units = units;
+        _isLoading = false;
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // Dummy data untuk unit list
-    final units = [
-      {
-        'number': 'A-101',
-        'status': 'Terisi',
-        'tenant': 'Ahmad Rizky',
-        'startDate': '01 Jan 2023',
-      },
-      {
-        'number': 'A-102',
-        'status': 'Terisi',
-        'tenant': 'Siti Nurhaliza',
-        'startDate': '15 Feb 2023',
-      },
-      {
-        'number': 'A-103',
-        'status': 'Kosong',
-        'tenant': null,
-        'startDate': null,
-      },
-      {
-        'number': 'A-104',
-        'status': 'Terisi',
-        'tenant': 'Budi Santoso',
-        'startDate': '10 Mar 2023',
-      },
-      {
-        'number': 'A-105',
-        'status': 'Maintenance',
-        'tenant': null,
-        'startDate': null,
-      },
-      {
-        'number': 'A-106',
-        'status': 'Terisi',
-        'tenant': 'Dewi Lestari',
-        'startDate': '20 Apr 2023',
-      },
-      {
-        'number': 'A-107',
-        'status': 'Kosong',
-        'tenant': null,
-        'startDate': null,
-      },
-      {
-        'number': 'A-108',
-        'status': 'Terisi',
-        'tenant': 'Eko Prasetyo',
-        'startDate': '05 Mei 2023',
-      },
-    ];
-
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -89,135 +52,112 @@ class UnitList extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFF6B35).withAlpha(26),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(
-                      Icons.list_rounded,
-                      color: Color(0xFFFF6B35),
-                      size: 24,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  const Text(
-                    'Daftar Unit & Penghuni',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF1A1A1A),
-                    ),
-                  ),
-                ],
-              ),
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
+                padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFE3F2FD),
-                  borderRadius: BorderRadius.circular(8),
+                  color: const Color(0xFFFF6B35).withAlpha(26),
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                child: Text(
-                  '${units.length} unit',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFFFF6B35),
-                  ),
+                child: const Icon(
+                  Icons.list_rounded,
+                  color: Color(0xFFFF6B35),
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Text(
+                'Daftar Unit & Penghuni',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF1A1A1A),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 16),
-          ListView.separated(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: units.length,
-            separatorBuilder: (context, index) => const Divider(height: 20),
-            itemBuilder: (context, index) {
-              final unit = units[index];
-              final status = unit['status'] as String;
-              final tenant = unit['tenant'];
-              final startDate = unit['startDate'];
+          if (_isLoading)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(20.0),
+                child: CircularProgressIndicator(),
+              ),
+            )
+          else if (_units.isEmpty)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(20.0),
+                child: Text(
+                  'Belum ada unit',
+                  style: TextStyle(color: Color(0xFF757575)),
+                ),
+              ),
+            )
+          else
+            ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: _units.length,
+              separatorBuilder: (context, index) => const Divider(height: 16),
+              itemBuilder: (context, index) {
+                final unit = _units[index];
+                final hasOccupant = unit.tenantName != null;
 
-              return Row(
-                children: [
-                  Container(
-                    width: 50,
-                    height: 50,
-                    decoration: BoxDecoration(
-                      color: _getStatusColor(status).withAlpha(26),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Center(
-                      child: Text(
-                        unit['number'] as String,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: _getStatusColor(status),
-                        ),
+                return Row(
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: hasOccupant
+                            ? const Color(0xFF4CAF50).withAlpha(26)
+                            : const Color(0xFF757575).withAlpha(26),
+                        borderRadius: BorderRadius.circular(10),
                       ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          tenant ?? 'Unit $status',
+                      child: Center(
+                        child: Text(
+                          '${unit.id}',
                           style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                            color: tenant != null
-                                ? const Color(0xFF1A1A1A)
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: hasOccupant
+                                ? const Color(0xFF4CAF50)
                                 : const Color(0xFF757575),
                           ),
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          startDate != null
-                              ? 'Mulai kontrak: $startDate'
-                              : 'Tidak ada penghuni',
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: Color(0xFF757575),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: _getStatusColor(status).withAlpha(26),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      status,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: _getStatusColor(status),
                       ),
                     ),
-                  ),
-                ],
-              );
-            },
-          ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            unit.description,
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF1A1A1A),
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            unit.tenantName ?? 'Belum ada penghuni',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: hasOccupant
+                                  ? const Color(0xFF4CAF50)
+                                  : const Color(0xFF757575),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
         ],
       ),
     );

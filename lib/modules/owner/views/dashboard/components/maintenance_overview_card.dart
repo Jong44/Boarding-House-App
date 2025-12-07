@@ -1,20 +1,27 @@
+import 'package:boarding_house_app/modules/owner/features/provider/owner_dashboard_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class MaintenanceOverviewCard extends StatelessWidget {
+class MaintenanceOverviewCard extends ConsumerWidget {
   const MaintenanceOverviewCard({Key? key}) : super(key: key);
 
-  String _formatCurrency(int amount) {
-    return amount.toString().replaceAllMapped(
+  String _formatCurrency(double amount) {
+    return amount.toInt().toString().replaceAllMapped(
       RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
       (Match m) => '${m[1]}.',
     );
   }
 
   @override
-  Widget build(BuildContext context) {
-    const pendingTickets = 8;
-    const inProgressTickets = 5;
-    const monthlyMaintenanceCost = 12500000; // Rp 12.5 juta
+  Widget build(BuildContext context, WidgetRef ref) {
+    final dashboardState = ref.watch(ownerDashboardProvider);
+    final isLoading = dashboardState.isLoadingMaintenance;
+    final maintenanceData = dashboardState.maintenanceData;
+    final error = dashboardState.errorMaintenance;
+
+    final pendingTickets = maintenanceData?.pendingTickets ?? 0;
+    final inProgressTickets = maintenanceData?.inProgressTickets ?? 0;
+    final monthlyMaintenanceCost = maintenanceData?.monthlyMaintenanceCost ?? 0;
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -58,56 +65,75 @@ class MaintenanceOverviewCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 20),
-          Row(
-            children: [
-              Expanded(
-                child: _buildTicketItem(
-                  label: 'Pending',
-                  count: pendingTickets,
-                  color: const Color(0xFFFF9800),
-                  icon: Icons.pending_rounded,
+          if (isLoading)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(20.0),
+                child: CircularProgressIndicator(),
+              ),
+            )
+          else if (error != null)
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Text(
+                  'Gagal memuat data',
+                  style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildTicketItem(
-                  label: 'In Progress',
-                  count: inProgressTickets,
-                  color: const Color(0xFF2196F3),
-                  icon: Icons.sync_rounded,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF5F5F5),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            )
+          else ...[
+            Row(
               children: [
-                const Text(
-                  'Total Biaya Bulan Ini',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF1A1A1A),
+                Expanded(
+                  child: _buildTicketItem(
+                    label: 'Pending',
+                    count: pendingTickets,
+                    color: const Color(0xFFFF9800),
+                    icon: Icons.pending_rounded,
                   ),
                 ),
-                Text(
-                  'Rp ${_formatCurrency(monthlyMaintenanceCost)}',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFFFF6B35),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildTicketItem(
+                    label: 'In Progress',
+                    count: inProgressTickets,
+                    color: const Color(0xFF2196F3),
+                    icon: Icons.sync_rounded,
                   ),
                 ),
               ],
             ),
-          ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF5F5F5),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Total Biaya Bulan Ini',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF1A1A1A),
+                    ),
+                  ),
+                  Text(
+                    'Rp ${_formatCurrency(monthlyMaintenanceCost)}',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFFFF6B35),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );
