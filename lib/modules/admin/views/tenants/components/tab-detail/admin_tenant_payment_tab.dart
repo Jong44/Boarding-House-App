@@ -125,11 +125,12 @@ class AdminTenantPaymentTab extends StatelessWidget {
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: _getStatusColor(newestContract.status),
+                            color: _getStatusColor(newestContract.status ?? '')
+                                .withOpacity(0.4),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
-                            _getStatusText(newestContract.status),
+                            _getStatusText(newestContract.status ?? ''),
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: 12,
@@ -183,7 +184,7 @@ class AdminTenantPaymentTab extends StatelessWidget {
                     return _buildInvoiceItem(
                       'Invoice #${invoice.id ?? 'N/A'}',
                       '${formatDate(invoice.issueDate)} - ${formatDate(invoice.dueDate)}',
-                      invoice.status,
+                      invoice.status ?? '',
                       invoice.totalAmount.toInt(),
                     );
                   },

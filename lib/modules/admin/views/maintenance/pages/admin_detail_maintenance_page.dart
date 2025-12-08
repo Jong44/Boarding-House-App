@@ -1,20 +1,25 @@
+import 'package:boarding_house_app/modules/admin/features/models/maintenance_model.dart';
+import 'package:boarding_house_app/modules/admin/features/notifier/admin_maintenance_notifier.dart';
+import 'package:boarding_house_app/modules/admin/features/provider/admin_maintenance_action_provider.dart';
+import 'package:boarding_house_app/modules/admin/features/provider/admin_maintenance_provider.dart';
 import 'package:boarding_house_app/modules/admin/views/maintenance/pages/admin_list_maintenance_page.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 // Detail Page
-class AdminDetailMaintenancePage extends StatefulWidget {
-  final MaintenanceTicket ticket;
+class AdminDetailMaintenancePage extends ConsumerStatefulWidget {
+  final MaintenanceModel ticket;
 
   const AdminDetailMaintenancePage({Key? key, required this.ticket})
     : super(key: key);
 
   @override
-  State<AdminDetailMaintenancePage> createState() =>
+  ConsumerState<AdminDetailMaintenancePage> createState() =>
       _AdminDetailMaintenancePageState();
 }
 
 class _AdminDetailMaintenancePageState
-    extends State<AdminDetailMaintenancePage> {
+    extends ConsumerState<AdminDetailMaintenancePage> {
   String currentStatus = '';
   String assignedTechnician = 'Not Assigned';
   final TextEditingController noteController = TextEditingController();
@@ -23,38 +28,20 @@ class _AdminDetailMaintenancePageState
   @override
   void initState() {
     super.initState();
-    currentStatus = widget.ticket.status;
-    // Dummy activity logs
-    activityLogs = [
-      'Ticket created - ${_formatDate(widget.ticket.dateSubmitted)}',
-      'Waiting for technician assignment',
-    ];
+    currentStatus = widget.ticket.status ?? 'Pending';
   }
 
   String _formatDate(DateTime date) {
     return '${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
   }
 
-  Color getPriorityColor(String priority) {
-    switch (priority) {
-      case 'High':
-        return Colors.red;
-      case 'Medium':
-        return Colors.orange;
-      case 'Low':
-        return Colors.green;
-      default:
-        return Colors.grey;
-    }
-  }
-
   Color getStatusColor(String status) {
     switch (status) {
-      case 'Pending':
+      case 'Pending' || 'open':
         return Colors.orange;
-      case 'In Progress':
+      case 'In Progress' || 'in_progress':
         return Colors.blue;
-      case 'Completed':
+      case 'Completed' || 'completed':
         return Colors.green;
       case 'Cancelled':
         return Colors.grey;
@@ -63,8 +50,36 @@ class _AdminDetailMaintenancePageState
     }
   }
 
+  Future<void> _handleStatusUpdate(String newStatus) async {
+    if (newStatus == currentStatus) return;
+
+    final newStatuss = newStatus.toLowerCase().replaceAll(' ', '_');
+
+    await ref
+        .read(AdminMaintenanceActionNotifierProvider.notifier)
+        .updateStatus(widget.ticket.id!, newStatuss);
+
+    await ref
+        .read(adminMaintenanceNotifierProvider.notifier)
+        .refreshMaintenances();
+
+    setState(() {
+      currentStatus = newStatus;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Status berhasil diupdate ke $newStatus')),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final state = ref.watch(AdminMaintenanceActionNotifierProvider);
+
+    if (state.isLoading) {
+      return Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
@@ -75,21 +90,13 @@ class _AdminDetailMaintenancePageState
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          widget.ticket.ticketId,
+          "Ticket #${widget.ticket.id}",
           style: const TextStyle(
             color: Colors.black,
             fontSize: 18,
             fontWeight: FontWeight.w600,
           ),
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.more_vert, color: Colors.black),
-            onPressed: () {
-              _showOptionsMenu();
-            },
-          ),
-        ],
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -131,47 +138,6 @@ class _AdminDetailMaintenancePageState
                       ),
                     ],
                   ),
-                  // Priority
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      const Text(
-                        'Priority',
-                        style: TextStyle(fontSize: 12, color: Colors.grey),
-                      ),
-                      const SizedBox(height: 4),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
-                          color: getPriorityColor(
-                            widget.ticket.priority,
-                          ).withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.flag,
-                              size: 16,
-                              color: getPriorityColor(widget.ticket.priority),
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              widget.ticket.priority,
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: getPriorityColor(widget.ticket.priority),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
                 ],
               ),
             ),
@@ -180,19 +146,19 @@ class _AdminDetailMaintenancePageState
 
             // Tenant Information
             _buildSectionCard(
-              title: 'Tenant Information',
+              title: 'Informasi Penyewa',
               child: Column(
                 children: [
                   _buildInfoRow(
                     Icons.person_outline,
                     'Name',
-                    widget.ticket.tenantName,
+                    widget.ticket.tenant?.fullName ?? 'N/A',
                   ),
                   const Divider(height: 24),
                   _buildInfoRow(
                     Icons.room_outlined,
                     'Room',
-                    widget.ticket.room,
+                    "Kamar ${widget.ticket.room?.id ?? 'N/A'}",
                   ),
                   const Divider(height: 24),
                   _buildInfoRow(
@@ -208,25 +174,20 @@ class _AdminDetailMaintenancePageState
 
             // Ticket Details
             _buildSectionCard(
-              title: 'Ticket Details',
+              title: 'Detail Ticket',
               child: Column(
                 children: [
-                  _buildInfoRow(
-                    Icons.category_outlined,
-                    'Category',
-                    widget.ticket.category,
-                  ),
                   const Divider(height: 24),
                   _buildInfoRow(
                     Icons.calendar_today_outlined,
-                    'Submitted',
-                    _formatDate(widget.ticket.dateSubmitted),
+                    'Created At',
+                    _formatDate(widget.ticket.createdAt),
                   ),
                   const Divider(height: 24),
                   _buildInfoRow(
                     Icons.description_outlined,
                     'Description',
-                    widget.ticket.description,
+                    widget.ticket.description ?? 'Deskripsi Belum Tersedia',
                     isLong: true,
                   ),
                 ],
@@ -234,184 +195,6 @@ class _AdminDetailMaintenancePageState
             ),
 
             const SizedBox(height: 8),
-
-            // Photos (if any)
-            _buildSectionCard(
-              title: 'Photos',
-              child: Container(
-                height: 120,
-                decoration: BoxDecoration(
-                  color: Colors.grey[200],
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.image_outlined,
-                        size: 40,
-                        color: Colors.grey[400],
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'No photos uploaded',
-                        style: TextStyle(color: Colors.grey[600], fontSize: 12),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 8),
-
-            // Assigned Technician
-            _buildSectionCard(
-              title: 'Assigned Technician',
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      CircleAvatar(
-                        backgroundColor: const Color(
-                          0xFFFF5722,
-                        ).withOpacity(0.1),
-                        child: const Icon(
-                          Icons.person,
-                          color: Color(0xFFFF5722),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            assignedTechnician,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            assignedTechnician == 'Not Assigned'
-                                ? 'Tap to assign'
-                                : 'Technician',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  IconButton(
-                    icon: const Icon(
-                      Icons.edit_outlined,
-                      color: Color(0xFFFF5722),
-                    ),
-                    onPressed: () {
-                      _showAssignTechnicianDialog();
-                    },
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 8),
-
-            // Internal Notes
-            _buildSectionCard(
-              title: 'Internal Notes',
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  TextField(
-                    controller: noteController,
-                    maxLines: 3,
-                    decoration: InputDecoration(
-                      hintText: 'Add internal notes...',
-                      filled: true,
-                      fillColor: Colors.grey[100],
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        if (noteController.text.isNotEmpty) {
-                          setState(() {
-                            activityLogs.add(
-                              'Note added: ${noteController.text}',
-                            );
-                            noteController.clear();
-                          });
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Note added successfully'),
-                            ),
-                          );
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFFF5722),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: const Text('Add Note'),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 8),
-
-            // Activity Log
-            _buildSectionCard(
-              title: 'Activity Log',
-              child: ListView.separated(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: activityLogs.length,
-                separatorBuilder: (context, index) => const Divider(height: 16),
-                itemBuilder: (context, index) {
-                  return Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        width: 8,
-                        height: 8,
-                        margin: const EdgeInsets.only(top: 6),
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFFF5722),
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          activityLogs[index],
-                          style: const TextStyle(fontSize: 13),
-                        ),
-                      ),
-                    ],
-                  );
-                },
-              ),
-            ),
-
-            const SizedBox(height: 100),
           ],
         ),
       ),
@@ -469,8 +252,11 @@ class _AdminDetailMaintenancePageState
                   ),
                 ),
                 child: const Text(
-                  'Mark Complete',
-                  style: TextStyle(fontWeight: FontWeight.w600),
+                  'Selesaikan',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
                 ),
               ),
             ),
@@ -544,10 +330,9 @@ class _AdminDetailMaintenancePageState
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              _buildStatusOption('Pending'),
+              _buildStatusOption('Open'),
               _buildStatusOption('In Progress'),
               _buildStatusOption('Completed'),
-              _buildStatusOption('Cancelled'),
             ],
           ),
         );
@@ -566,62 +351,13 @@ class _AdminDetailMaintenancePageState
         ),
       ),
       title: Text(status),
-      onTap: () {
-        setState(() {
-          currentStatus = status;
-          activityLogs.add(
-            'Status changed to $status - ${_formatDate(DateTime.now())}',
-          );
-        });
+      onTap: () async {
+        await _handleStatusUpdate(status);
+        Navigator.pop(context);
         Navigator.pop(context);
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Status updated to $status')));
-      },
-    );
-  }
-
-  void _showAssignTechnicianDialog() {
-    final technicians = [
-      'John Smith',
-      'Michael Brown',
-      'David Wilson',
-      'Sarah Johnson',
-    ];
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Assign Technician'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: technicians.map((tech) {
-              return ListTile(
-                leading: CircleAvatar(
-                  backgroundColor: const Color(0xFFFF5722).withOpacity(0.1),
-                  child: Text(
-                    tech[0],
-                    style: const TextStyle(color: Color(0xFFFF5722)),
-                  ),
-                ),
-                title: Text(tech),
-                onTap: () {
-                  setState(() {
-                    assignedTechnician = tech;
-                    activityLogs.add(
-                      'Assigned to $tech - ${_formatDate(DateTime.now())}',
-                    );
-                  });
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(
-                    context,
-                  ).showSnackBar(SnackBar(content: Text('Assigned to $tech')));
-                },
-              );
-            }).toList(),
-          ),
-        );
       },
     );
   }
@@ -631,105 +367,28 @@ class _AdminDetailMaintenancePageState
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Mark as Completed'),
+          title: const Text('Selesaikan Ticket'),
           content: const Text(
-            'Are you sure you want to mark this ticket as completed?',
+            'Apakah Anda yakin ingin menandai ticket ini sebagai selesai?',
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
+              child: const Text('Batal'),
             ),
             ElevatedButton(
-              onPressed: () {
-                setState(() {
-                  currentStatus = 'Completed';
-                  activityLogs.add(
-                    'Ticket completed - ${_formatDate(DateTime.now())}',
-                  );
-                });
+              onPressed: () async {
+                await _handleStatusUpdate('Completed');
+                Navigator.pop(context);
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Ticket marked as completed')),
+                  const SnackBar(content: Text('Ticket sudah selesai')),
                 );
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFFF5722),
               ),
-              child: const Text('Confirm'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _showOptionsMenu() {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        return Container(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: const Icon(Icons.edit, color: Color(0xFFFF5722)),
-                title: const Text('Edit Ticket'),
-                onTap: () {
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Edit functionality coming soon'),
-                    ),
-                  );
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.delete, color: Colors.red),
-                title: const Text(
-                  'Delete Ticket',
-                  style: TextStyle(color: Colors.red),
-                ),
-                onTap: () {
-                  Navigator.pop(context);
-                  _showDeleteConfirmation();
-                },
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  void _showDeleteConfirmation() {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Delete Ticket'),
-          content: const Text(
-            'Are you sure you want to delete this ticket? This action cannot be undone.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pop(context);
-                Navigator.pop(context); // Back to list
-                ScaffoldMessenger.of(
-                  context,
-                ).showSnackBar(const SnackBar(content: Text('Ticket deleted')));
-              },
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-              child: const Text('Delete'),
+              child: const Text('Selesaikan'),
             ),
           ],
         );
@@ -739,7 +398,6 @@ class _AdminDetailMaintenancePageState
 
   @override
   void dispose() {
-    noteController.dispose();
     super.dispose();
   }
 }

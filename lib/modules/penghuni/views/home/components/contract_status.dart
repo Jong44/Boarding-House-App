@@ -55,7 +55,7 @@ class _ContractStatusState extends State<ContractStatus> {
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
-                  contract.status,
+                  contract.status ?? 'active',
                   style: TextStyle(
                     color: Color(0xFF4CAF50),
                     fontSize: 12,

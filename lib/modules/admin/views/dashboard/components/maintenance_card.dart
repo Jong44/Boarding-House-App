@@ -1,3 +1,4 @@
+import 'package:boarding_house_app/utils/format_date.dart';
 import 'package:flutter/material.dart';
 
 class MaintenanceCard extends StatelessWidget {
@@ -84,19 +85,13 @@ class MaintenanceCard extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: const Color(0xFFF5F5F5),
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: ticket['urgent'] as bool
-                              ? const Color(0xFFFF5252).withOpacity(0.3)
-                              : Colors.transparent,
-                        ),
+                        border: Border.all(color: Colors.transparent),
                       ),
                       child: Row(
                         children: [
                           Icon(
                             Icons.report_problem_rounded,
-                            color: ticket['urgent'] as bool
-                                ? const Color(0xFFFF5252)
-                                : const Color(0xFFFFC107),
+                            color: const Color(0xFFFFC107),
                             size: 20,
                           ),
                           const SizedBox(width: 12),
@@ -105,7 +100,7 @@ class MaintenanceCard extends StatelessWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  ticket['title'] as String,
+                                  ticket['description'] as String,
                                   style: const TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w600,
@@ -116,7 +111,7 @@ class MaintenanceCard extends StatelessWidget {
                                 Row(
                                   children: [
                                     Text(
-                                      ticket['room'] as String,
+                                      "Kamar" + (ticket['room']?['id'] ?? ''),
                                       style: TextStyle(
                                         fontSize: 12,
                                         color: Colors.grey[600],
@@ -124,7 +119,7 @@ class MaintenanceCard extends StatelessWidget {
                                     ),
                                     const SizedBox(width: 8),
                                     Text(
-                                      '• ${ticket['time']}',
+                                      '• ${formatDate(DateTime.parse(ticket['created_at']))}',
                                       style: TextStyle(
                                         fontSize: 12,
                                         color: Colors.grey[600],

@@ -21,7 +21,7 @@ class _MaintenanceStatusState extends State<MaintenanceStatus> {
           Color statusColor;
           IconData icon;
 
-          switch (maintenance.status.toLowerCase()) {
+          switch (maintenance.status!.toLowerCase()) {
             case 'pending':
               statusColor = Colors.orange;
               icon = Icons.hourglass_empty;
@@ -46,8 +46,8 @@ class _MaintenanceStatusState extends State<MaintenanceStatus> {
           return Padding(
             padding: const EdgeInsets.only(bottom: 12.0),
             child: _buildMaintenanceCard(
-              maintenance.description,
-              maintenance.status.replaceAll('_', ' ').toUpperCase(),
+              maintenance.description ?? '',
+              maintenance.status!.replaceAll('_', ' ').toUpperCase(),
               statusColor,
               icon,
             ),

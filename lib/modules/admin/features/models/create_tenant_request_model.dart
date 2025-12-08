@@ -7,7 +7,7 @@ class CreateTenantRequestModel {
   final double price;
 
   final int propertyId = 1;
-  final int roomId = 1;
+  final int roomId;
 
   final String categoryContract;
 
@@ -20,7 +20,7 @@ class CreateTenantRequestModel {
     required this.address,
     required this.startDate,
     required this.price,
-
+    required this.roomId,
     required this.categoryContract,
   });
 

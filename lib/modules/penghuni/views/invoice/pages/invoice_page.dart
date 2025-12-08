@@ -202,7 +202,7 @@ class _InvoicesPageState extends ConsumerState<InvoicesPage> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
-                        status,
+                        status ?? '',
                         style: TextStyle(
                           color: statusColor,
                           fontSize: 12,

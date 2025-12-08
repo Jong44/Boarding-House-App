@@ -12,8 +12,8 @@ class ContractModel {
   final DateTime startDate;
   final DateTime endDate;
   final double price;
-  final String contractType;
-  final String status;
+  final String? contractType;
+  final String? status;
   final DateTime createdAt;
   final DateTime updatedAt;
   final AppUser? tenantDetails;
@@ -28,8 +28,8 @@ class ContractModel {
     required this.startDate,
     required this.endDate,
     required this.price,
-    required this.contractType,
-    required this.status,
+    this.contractType,
+    this.status,
     required this.createdAt,
     required this.updatedAt,
     this.tenantDetails,
@@ -39,17 +39,18 @@ class ContractModel {
   });
 
   factory ContractModel.fromMap(Map<String, dynamic> map) {
+    print(map.toString());
     return ContractModel(
       id: map['id'] as int?,
       tenantId: map['tenant_id'] as int,
       roomId: map['room_id'] as int,
-      startDate: DateTime.parse(map['start_date'] as String),
-      endDate: DateTime.parse(map['end_date'] as String),
+      startDate: DateTime.parse(map['start_date'] as String? ?? ''),
+      endDate: DateTime.parse(map['end_date'] as String? ?? ''),
       price: map['price'] != null ? (map['price'] as num).toDouble() : 0.0,
       contractType: map['contract_type'] as String? ?? "monthly",
-      status: map['status'] as String,
-      createdAt: DateTime.parse(map['created_at'] as String),
-      updatedAt: DateTime.parse(map['updated_at'] as String),
+      status: map['status'] as String? ?? "active",
+      createdAt: DateTime.parse(map['created_at'] as String? ?? ''),
+      updatedAt: DateTime.parse(map['updated_at'] as String? ?? ''),
       tenantDetails: map['tenants'] != null
           ? AppUser.fromMap(map['tenants'] as Map<String, dynamic>)
           : null,

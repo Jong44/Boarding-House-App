@@ -1,3 +1,4 @@
+import 'package:boarding_house_app/models/room_model.dart';
 import 'package:boarding_house_app/modules/admin/features/models/dashboard_room_model.dart';
 import 'package:boarding_house_app/services/auth_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -25,5 +26,61 @@ class RoomService {
     );
 
     return dashboardData;
+  }
+
+  Future<List<RoomModel>> getAllRooms() async {
+    final response = await supabase.from('rooms').select();
+
+    final data = (response as List)
+        .map((e) => e as Map<String, dynamic>)
+        .toList();
+
+    return data.map((e) => RoomModel.fromMap(e)).toList();
+  }
+
+  Future<void> createRoom(RoomModel room) async {
+    final user = authService.getCurrentUser();
+    if (user == null) {
+      throw Exception('User not authenticated');
+    }
+
+    final roomData = {
+      'property_id': room.propertyId,
+      'room_type_id': room.roomTypeId,
+      'status': room.status,
+      'description': room.description,
+    };
+
+    final response = await supabase.from('rooms').insert(roomData);
+
+    if (response.error != null) {
+      throw Exception('Failed to create room: ${response.error!.message}');
+    }
+  }
+
+  Future<void> updateRoom(int roomId, RoomModel room) async {
+    final updatedData = {
+      'property_id': room.propertyId,
+      'room_type_id': room.roomTypeId,
+      'status': room.status,
+      'description': room.description,
+    };
+
+    final response = await supabase
+        .from('rooms')
+        .update(updatedData)
+        .eq('id', roomId);
+
+    if (response.error != null) {
+      throw Exception('Failed to update room: ${response.error!.message}');
+    }
+  }
+
+  Future<void> deleteRoom(int roomId) async {
+    final response = await supabase.from('rooms').delete().eq('id', roomId);
+
+    if (response.error != null) {
+      throw Exception('Failed to delete room: ${response.error!.message}');
+    }
   }
 }

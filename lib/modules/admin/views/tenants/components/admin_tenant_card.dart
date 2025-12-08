@@ -172,7 +172,7 @@ class AdminTenantCard extends StatelessWidget {
                               vertical: 6,
                             ),
                             decoration: BoxDecoration(
-                              color: _getStatusColor(tenant.status),
+                              color: _getStatusColor(tenant.status ?? ''),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(
@@ -180,13 +180,13 @@ class AdminTenantCard extends StatelessWidget {
                                 _getStatusBasedOnDates(
                                   tenant.startDate,
                                   tenant.endDate,
-                                  tenant.status,
+                                  tenant.status ?? '',
                                 ),
                               ),
                               style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w600,
-                                color: _getStatusTextColor(tenant.status),
+                                color: _getStatusTextColor(tenant.status ?? ''),
                               ),
                             ),
                           ),

@@ -11,7 +11,7 @@ class TenantUserModel {
       id: map['id'] as int?,
       userId: map['user_id'] as int?,
       birthDate: map['birth_date'] != null
-          ? DateTime.parse(map['birth_date'] as String)
+          ? DateTime.parse(map['birth_date'] as String? ?? '')
           : null,
       address: map['address'] as String?,
     );

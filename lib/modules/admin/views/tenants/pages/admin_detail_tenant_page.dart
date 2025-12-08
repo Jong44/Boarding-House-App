@@ -44,7 +44,7 @@ class _AdminDetailTenantPageState extends ConsumerState<AdminDetailTenantPage>
     BuildContext context,
     AsyncValue<void> invoiceState,
   ) async {
-    if (contract.status.toLowerCase() != 'active') {
+    if (contract.status!.toLowerCase() != 'active') {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
@@ -99,7 +99,7 @@ class _AdminDetailTenantPageState extends ConsumerState<AdminDetailTenantPage>
     BuildContext context,
     AsyncValue<void> invoiceState,
   ) async {
-    if (contract.status.toLowerCase() != 'active') {
+    if (contract.status!.toLowerCase() != 'active') {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Tidak dapat mengakhiri kontrak yang tidak aktif.'),
@@ -237,16 +237,16 @@ class _AdminDetailTenantPageState extends ConsumerState<AdminDetailTenantPage>
                             ),
                             decoration: BoxDecoration(
                               color: _getStatusColor(
-                                contract.status,
+                                contract.status ?? '',
                               ).withOpacity(0.1),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(
-                              _getStatusText(contract.status),
+                              _getStatusText(contract.status ?? ''),
                               style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
-                                color: _getStatusColor(contract.status),
+                                color: _getStatusColor(contract.status ?? ''),
                               ),
                             ),
                           ),

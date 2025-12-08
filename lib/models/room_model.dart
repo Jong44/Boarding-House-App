@@ -1,7 +1,7 @@
 class RoomModel {
   final int? id;
-  final int propertyId;
-  final int roomTypeId;
+  final int? propertyId;
+  final int? roomTypeId;
   final String? description;
   final String status;
 
@@ -14,12 +14,13 @@ class RoomModel {
   });
 
   factory RoomModel.fromMap(Map<String, dynamic> map) {
+    print(map.toString());
     return RoomModel(
       id: map['id'] as int?,
-      propertyId: map['property_id'] as int,
-      roomTypeId: map['room_type_id'] as int,
+      propertyId: map['property_id'] as int?,
+      roomTypeId: map['room_type_id'] as int?,
       description: map['description'] as String?,
-      status: map['status'] as String,
+      status: map['status'] as String? ?? 'available',
     );
   }
 

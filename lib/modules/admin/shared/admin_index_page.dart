@@ -1,17 +1,22 @@
 import 'package:boarding_house_app/modules/admin/views/dashboard/pages/admin_dashboard_page.dart';
 import 'package:boarding_house_app/modules/admin/views/maintenance/pages/admin_list_maintenance_page.dart';
-import 'package:boarding_house_app/modules/admin/views/reports/pages/admin_reports_page.dart';
+import 'package:boarding_house_app/modules/admin/views/property/pages/admin_property_page.dart';
+import 'package:boarding_house_app/modules/admin/views/room_type/pages/admin_room_type_page.dart';
+import 'package:boarding_house_app/modules/admin/views/rooms/pages/admin_rooms_page.dart';
 import 'package:boarding_house_app/modules/admin/views/tenants/pages/admin_tenants_page.dart';
+import 'package:boarding_house_app/modules/auth/pages/login_page.dart';
+import 'package:boarding_house_app/modules/penghuni/features/provider/tenant_user_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class AdminIndexPage extends StatefulWidget {
+class AdminIndexPage extends ConsumerStatefulWidget {
   const AdminIndexPage({Key? key}) : super(key: key);
 
   @override
-  State<AdminIndexPage> createState() => _AdminIndexPageState();
+  ConsumerState<AdminIndexPage> createState() => _AdminIndexPageState();
 }
 
-class _AdminIndexPageState extends State<AdminIndexPage> {
+class _AdminIndexPageState extends ConsumerState<AdminIndexPage> {
   int _selectedIndex = 0;
 
   final List<DrawerMenuItem> _menuItems = [
@@ -26,11 +31,20 @@ class _AdminIndexPageState extends State<AdminIndexPage> {
       title: 'Maintenance Management',
       index: 2,
     ),
-    DrawerMenuItem(icon: Icons.assessment_rounded, title: 'Reports', index: 3),
     DrawerMenuItem(
-      icon: Icons.person_rounded,
-      title: 'Admin Profile',
+      icon: Icons.build_circle_rounded,
+      title: 'Property Management',
+      index: 3,
+    ),
+    DrawerMenuItem(
+      icon: Icons.hotel_rounded,
+      title: 'Room Types Management',
       index: 4,
+    ),
+    DrawerMenuItem(
+      icon: Icons.meeting_room_rounded,
+      title: 'Rooms Management',
+      index: 5,
     ),
   ];
 
@@ -219,9 +233,11 @@ class _AdminIndexPageState extends State<AdminIndexPage> {
       case 2:
         return AdminListMaintenancePage();
       case 3:
-        return AdminReportsPage();
+        return AdminPropertyPage();
       case 4:
-        return const Center(child: Text('Admin Profile Page'));
+        return AdminRoomTypePage();
+      case 5:
+        return AdminRoomsPage();
       default:
         return const Center(child: Text('Page Not Found'));
     }
@@ -246,9 +262,14 @@ class _AdminIndexPageState extends State<AdminIndexPage> {
             ),
           ),
           ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              // Handle logout logic
+            onPressed: () async {
+              await ref
+                  .read(tenantUserActionNotifierProvider.notifier)
+                  .logout();
+              if (!mounted) return;
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(builder: (context) => const LoginPage()),
+              );
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFFF6B35),
@@ -256,7 +277,7 @@ class _AdminIndexPageState extends State<AdminIndexPage> {
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
-            child: const Text('Logout'),
+            child: const Text('Logout', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),

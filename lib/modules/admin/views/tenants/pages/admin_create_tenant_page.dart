@@ -93,6 +93,7 @@ class _AdminCreateTenantPageState extends ConsumerState<AdminCreateTenantPage> {
         phoneNumber: _phoneController.text,
         email: _emailController.text,
         address: _addressController.text,
+        roomId: int.tryParse(_selectedRoom ?? '') ?? 0,
         categoryContract: _selectedContractDuration ?? 'monthly',
         startDate: _startDate ?? DateTime.now(),
         price: double.tryParse(_priceController.text) ?? 0.0,
@@ -235,28 +236,6 @@ class _AdminCreateTenantPageState extends ConsumerState<AdminCreateTenantPage> {
               ),
               const SizedBox(height: 16),
               _buildDropdown(
-                label: 'Nomor Kamar',
-                value: _selectedRoom,
-                items:
-                    state.properties
-                        ?.firstWhere(
-                          (prop) => prop.name == _selectedPropertyType,
-                          orElse: () => state.properties!.first,
-                        )
-                        ?.rooms
-                        ?.map((e) => e.id.toString())
-                        .toList() ??
-                    [],
-                hint: 'Pilih nomor kamar',
-                icon: Icons.meeting_room_outlined,
-                onChanged: (value) {
-                  setState(() {
-                    _selectedRoom = value;
-                  });
-                },
-              ),
-              const SizedBox(height: 16),
-              _buildDropdown(
                 label: 'Tipe Kamar',
                 value: _selectedRoomType,
                 items:
@@ -275,6 +254,28 @@ class _AdminCreateTenantPageState extends ConsumerState<AdminCreateTenantPage> {
                 onChanged: (value) {
                   setState(() {
                     _selectedRoomType = value;
+                  });
+                },
+              ),
+              const SizedBox(height: 16),
+              _buildDropdown(
+                label: 'Nomor Kamar',
+                value: _selectedRoom,
+                items:
+                    state.properties
+                        ?.firstWhere(
+                          (prop) => prop.name == _selectedPropertyType,
+                          orElse: () => state.properties!.first,
+                        )
+                        ?.rooms
+                        ?.map((e) => e.id.toString())
+                        .toList() ??
+                    [],
+                hint: 'Pilih nomor kamar',
+                icon: Icons.meeting_room_outlined,
+                onChanged: (value) {
+                  setState(() {
+                    _selectedRoom = value;
                   });
                 },
               ),

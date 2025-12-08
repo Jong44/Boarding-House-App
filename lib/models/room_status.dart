@@ -1,14 +1,14 @@
 class DashboardRoomModel {
-  final int totalRooms;
-  final int occupiedRooms;
-  final int vacantRooms;
-  final int maintenanceRooms;
+  final int? totalRooms;
+  final int? occupiedRooms;
+  final int? vacantRooms;
+  final int? maintenanceRooms;
 
   DashboardRoomModel({
-    required this.totalRooms,
-    required this.occupiedRooms,
-    required this.vacantRooms,
-    this.maintenanceRooms = 0,
+    this.totalRooms,
+    this.occupiedRooms,
+    this.vacantRooms,
+    this.maintenanceRooms,
   });
 
   factory DashboardRoomModel.fromJson(Map<String, dynamic> json) {

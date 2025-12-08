@@ -3,7 +3,7 @@ import 'package:boarding_house_app/models/tenant_user_model.dart';
 class AppUser {
   final int? id;
   final String? fullName;
-  final String email;
+  final String? email;
   final String? role;
   final String? phoneNumber;
   final TenantUserModel? tenantDetails;
@@ -11,19 +11,18 @@ class AppUser {
   AppUser({
     this.id,
     this.fullName = '',
-    required this.email,
+    this.email,
     this.role = "tenant",
     this.phoneNumber = '',
     this.tenantDetails,
   });
 
   factory AppUser.fromMap(Map<String, dynamic> map) {
-    // convert from tenantDetails list to map using where user_id == id
 
     return AppUser(
       id: map['id'] as int?,
       fullName: map['full_name'] as String?,
-      email: map['email'] as String,
+      email: map['email'] as String?,
       role: map['role'] as String?,
       phoneNumber: map['phone'] as String?,
       tenantDetails: map['tenant_profile'] != null

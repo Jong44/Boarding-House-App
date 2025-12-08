@@ -254,7 +254,7 @@ class _MaintenancePageState extends ConsumerState<MaintenancePage> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
-                            workStatus,
+                            workStatus ?? 'Pending',
                             style: TextStyle(
                               color: statusColor,
                               fontSize: 11,
@@ -271,7 +271,7 @@ class _MaintenancePageState extends ConsumerState<MaintenancePage> {
 
                 // Description
                 Text(
-                  ticket.description,
+                  ticket.description ?? 'No description provided.',
                   style: const TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,

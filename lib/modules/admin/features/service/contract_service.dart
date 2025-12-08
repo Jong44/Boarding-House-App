@@ -12,7 +12,7 @@ class ContractService {
     final response = await supabase
         .from('contracts')
         .select(
-          '*, rooms:room_id (*, properties:property_id (owner_id)), tenants:tenant_id (*), invoices(*, payments(*))',
+          '*, rooms:room_id (*, properties:property_id (*)), tenants:tenant_id (*), invoices(*, payments(*))',
         );
 
     final data = (response as List)
@@ -50,7 +50,7 @@ class ContractService {
     final response = await supabase
         .from('contracts')
         .select(
-          '*, rooms:room_id (*, properties:property_id (owner_id)), tenants:tenant_id (*), invoices(*, payments(*))',
+          '*, rooms:room_id (*, properties:property_id (*)), tenants:tenant_id (*), invoices(*, payments(*))',
         )
         .ilike('tenants.full_name', '%$query%')
         .ilike('tenants.phone', '%$query%');
@@ -66,7 +66,7 @@ class ContractService {
     final response = await supabase
         .from('contracts')
         .select(
-          '*, rooms:room_id (*, properties:property_id (owner_id)), tenants:tenant_id (*), invoices(*, payments(*))',
+          '*, rooms:room_id (*, properties:property_id (*)), tenants:tenant_id (*), invoices(*, payments(*))',
         );
 
     final data = (response as List)
@@ -100,6 +100,17 @@ class ContractService {
   }
 
   Future<void> endedContract(int contractId) async {
+    final roomIdResponse = await supabase
+        .from('contracts')
+        .select('room_id')
+        .eq('id', contractId)
+        .single();
+
+    final roomId = roomIdResponse['room_id'] as int;
+    await supabase
+        .from('rooms')
+        .update({'status': 'available'})
+        .eq('id', roomId);
     await supabase
         .from('contracts')
         .update({'status': 'ended'})
@@ -159,6 +170,11 @@ class ContractService {
         'price': request['price'],
         'contract_type': request['contract_type'] ?? 'monthly',
       });
+
+      await supabase
+          .from('rooms')
+          .update({'status': 'occupied'})
+          .eq('id', request['room_id']);
 
       await supabase.auth.setSession(adminRefreshToken!);
 

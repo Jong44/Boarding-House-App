@@ -3,11 +3,11 @@ import 'package:boarding_house_app/models/payment_model.dart';
 
 class InvoiceModel {
   final int? id;
-  final int contractId;
+  final int? contractId;
   final DateTime issueDate;
   final DateTime dueDate;
   final double totalAmount;
-  final String status;
+  final String? status;
   final DateTime createdAt;
   final DateTime updatedAt;
   final List<PaymentModel>? payments;
@@ -19,7 +19,7 @@ class InvoiceModel {
     required this.issueDate,
     required this.dueDate,
     required this.totalAmount,
-    required this.status,
+    this.status,
     required this.createdAt,
     required this.updatedAt,
     this.payments,
@@ -29,13 +29,13 @@ class InvoiceModel {
   factory InvoiceModel.fromMap(Map<String, dynamic> map) {
     return InvoiceModel(
       id: map['id'] as int?,
-      contractId: map['contract_id'] as int,
-      issueDate: DateTime.parse(map['issue_date'] as String),
-      dueDate: DateTime.parse(map['due_date'] as String),
+      contractId: map['contract_id'] as int?,
+      issueDate: DateTime.parse(map['issue_date'] as String? ?? ''),
+      dueDate: DateTime.parse(map['due_date'] as String? ?? ''),
       totalAmount: (map['total_amount'] as num).toDouble(),
-      status: map['status'] as String,
-      createdAt: DateTime.parse(map['created_at'] as String),
-      updatedAt: DateTime.parse(map['updated_at'] as String),
+      status: map['status'] as String?,
+      createdAt: DateTime.parse(map['created_at'] as String? ?? ''),
+      updatedAt: DateTime.parse(map['updated_at'] as String? ?? ''),
       payments: map['payments'] != null
           ? (map['payments'] as List)
                 .map((e) => PaymentModel.fromMap(e as Map<String, dynamic>))

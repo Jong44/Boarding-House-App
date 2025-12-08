@@ -55,15 +55,15 @@ class AdminTenantContractTab extends StatelessWidget {
             _buildInfoRow('Nomor Kontrak', contract.id.toString()),
             _buildInfoRow('Tanggal Mulai', formatDate(contract.startDate)),
             _buildInfoRow('Tanggal Berakhir', formatDate(contract.endDate)),
-            _buildInfoRow('Kategori Sewa', contract.contractType),
+            _buildInfoRow('Kategori Sewa', contract.contractType ?? 'N/A'),
             _buildInfoRow(
               'Status',
-              _getStatusText(contract.status),
-              valueColor: _getStatusColor(contract.status) == 'green'
+              _getStatusText(contract.status ?? ''),
+              valueColor: _getStatusColor(contract.status ?? '') == 'green'
                   ? const Color(0xFF059669)
-                  : _getStatusColor(contract.status) == 'orange'
+                  : _getStatusColor(contract.status ?? '') == 'orange'
                   ? const Color(0xFFB45309)
-                  : _getStatusColor(contract.status) == 'red'
+                  : _getStatusColor(contract.status ?? '') == 'red'
                   ? const Color(0xFFDC2626)
                   : const Color(0xFF6B7280),
             ),

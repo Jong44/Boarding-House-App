@@ -109,7 +109,7 @@ class TicketDetailPage extends ConsumerWidget {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
-                          workStatus,
+                          workStatus ?? 'Pending',
                           style: TextStyle(
                             color: statusColor,
                             fontSize: 13,
@@ -169,7 +169,7 @@ class TicketDetailPage extends ConsumerWidget {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    ticket.description,
+                    ticket.description ?? 'No description provided.',
                     style: const TextStyle(
                       fontSize: 15,
                       color: Color(0xFF1A1A1A),
@@ -247,7 +247,11 @@ class TicketDetailPage extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  _buildStatusRow('Work Status', workStatus, statusColor),
+                  _buildStatusRow(
+                    'Work Status',
+                    workStatus ?? 'Pending',
+                    statusColor,
+                  ),
                   const SizedBox(height: 12),
                   _buildStatusRow(
                     'Assigned Staff',

@@ -1,6 +1,6 @@
 class PaymentModel {
   final int? id;
-  final int invoiceId;
+  final int? invoiceId;
   final double amount;
   final DateTime paymentDate;
   final String method;
@@ -22,16 +22,17 @@ class PaymentModel {
   });
 
   factory PaymentModel.fromMap(Map<String, dynamic> map) {
+    print(map.toString());
     return PaymentModel(
       id: map['id'] as int?,
-      invoiceId: map['invoice_id'] as int,
+      invoiceId: map['invoice_id'] as int?,
       amount: (map['amount'] as num).toDouble(),
-      paymentDate: DateTime.parse(map['payment_date'] as String),
-      method: map['method'] as String,
-      status: map['status'] as String,
-      createdAt: DateTime.parse(map['created_at'] as String),
-      updatedAt: DateTime.parse(map['updated_at'] as String),
-      proofDocument: map['proof_document'] as String?,
+      paymentDate: DateTime.parse(map['payment_date'] as String? ?? ''),
+      method: map['method'] as String? ?? "cash",
+      status: map['status'] as String? ?? "pending",
+      createdAt: DateTime.parse(map['created_at'] as String? ?? ''),
+      updatedAt: DateTime.parse(map['updated_at'] as String? ?? ''),
+      proofDocument: map['proof_document'] as String? ?? "",
     );
   }
 
