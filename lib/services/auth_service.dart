@@ -16,7 +16,7 @@ class AuthService {
     return res;
   }
 
-  Future<AuthResponse> signIn(String email, String password) async {
+  Future<AppUser> signIn(String email, String password) async {
     final AuthResponse res = await supabase.auth.signInWithPassword(
       email: email,
       password: password,
@@ -33,7 +33,7 @@ class AuthService {
       throw Exception('User data not found in database');
     }
 
-    return res;
+    return AppUser.fromMap(response);
   }
 
   Future<void> signOut() => supabase.auth.signOut();

@@ -33,7 +33,7 @@ class _PaymentModalState extends ConsumerState<PaymentModal> {
 
   Future<void> _pickPaymentProof() async {
     final pickedFile = await ImagePicker().pickImage(
-      source: ImageSource.camera,
+      source: ImageSource.gallery,
     );
     if (pickedFile != null) {
       setState(() {
@@ -48,7 +48,7 @@ class _PaymentModalState extends ConsumerState<PaymentModal> {
     if (amountText.isEmpty || _paymentProof == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please enter amount and upload payment proof'),
+          content: Text('Jumlah pembayaran dan bukti pembayaran harus diisi'),
           backgroundColor: Colors.red,
         ),
       );
@@ -58,7 +58,7 @@ class _PaymentModalState extends ConsumerState<PaymentModal> {
     if (_paymentProof == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please upload payment proof'),
+          content: Text('Bukti pembayaran harus diunggah'),
           backgroundColor: Colors.red,
         ),
       );

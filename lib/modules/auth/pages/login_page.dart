@@ -1,4 +1,6 @@
+import 'package:boarding_house_app/modules/admin/shared/admin_index_page.dart';
 import 'package:boarding_house_app/modules/auth/pages/register_page.dart';
+import 'package:boarding_house_app/modules/owner/shared/owner_index_page.dart';
 import 'package:boarding_house_app/modules/penghuni/shared/index_page.dart';
 import 'package:boarding_house_app/services/auth_service.dart';
 import 'package:flutter/material.dart';
@@ -23,11 +25,32 @@ class _LoginPageState extends State<LoginPage> {
 
     try {
       final response = await _authService.signIn(email, password);
-      if (response.user != null) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const IndexPage()),
-        );
+      if (response.role != null) {
+        if (!mounted) return;
+        switch (response.role) {
+          case 'admin':
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const AdminIndexPage()),
+            );
+            break;
+          case 'owner':
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const OwnerIndexPage()),
+            );
+            break;
+          case 'tenant':
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const IndexPage()),
+            );
+            break;
+          default:
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(const SnackBar(content: Text('Unknown user role.')));
+        }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Login failed. Please try again.')),
@@ -194,34 +217,8 @@ class _LoginPageState extends State<LoginPage> {
                 ),
               ),
               const SizedBox(height: 24),
+
               // Divider
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    "Don't have an account? ",
-                    style: TextStyle(color: Colors.grey[600], fontSize: 14),
-                  ),
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const RegisterPage(),
-                        ),
-                      );
-                    },
-                    child: const Text(
-                      'Sign Up',
-                      style: TextStyle(
-                        color: Color(0xFFFF5722),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
             ],
           ),
         ),
