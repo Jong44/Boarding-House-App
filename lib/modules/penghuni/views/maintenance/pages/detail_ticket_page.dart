@@ -1,13 +1,23 @@
+import 'package:boarding_house_app/modules/admin/features/models/maintenance_model.dart';
+import 'package:boarding_house_app/modules/penghuni/features/provider/tenant_dashboard_provider.dart';
+import 'package:boarding_house_app/modules/penghuni/features/provider/tenant_ticket_provider.dart';
+import 'package:boarding_house_app/utils/format_date.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class TicketDetailPage extends StatelessWidget {
-  final Map<String, dynamic> ticket;
+class TicketDetailPage extends ConsumerWidget {
+  final MaintenanceModel ticket;
 
   const TicketDetailPage({Key? key, required this.ticket}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
-    final workStatus = ticket['workStatus'];
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(tenantTicketActionNotifierProvider);
+    if (state.isLoading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    final workStatus = ticket.status;
     Color statusColor;
     Color statusBgColor;
 
@@ -23,19 +33,6 @@ class TicketDetailPage extends StatelessWidget {
       default:
         statusColor = const Color(0xFFF44336);
         statusBgColor = const Color(0xFFF44336).withOpacity(0.1);
-    }
-
-    final verificationStatus = ticket['verificationStatus'];
-    Color verifyColor;
-    switch (verificationStatus) {
-      case 'Verified':
-        verifyColor = const Color(0xFF4CAF50);
-        break;
-      case 'Rejected':
-        verifyColor = const Color(0xFFF44336);
-        break;
-      default:
-        verifyColor = const Color(0xFF9E9E9E);
     }
 
     return Scaffold(
@@ -59,7 +56,7 @@ class TicketDetailPage extends StatelessWidget {
             icon: const Icon(Icons.more_vert, color: Color(0xFF1A1A1A)),
             onSelected: (value) {
               if (value == 'delete') {
-                _showDeleteConfirmation(context);
+                _showDeleteConfirmation(context, ref);
               }
             },
             itemBuilder: (context) => [
@@ -90,7 +87,7 @@ class TicketDetailPage extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    ticket['id'],
+                    ticket.id.toString(),
                     style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
@@ -112,31 +109,9 @@ class TicketDetailPage extends StatelessWidget {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
-                          workStatus,
+                          workStatus ?? 'Pending',
                           style: TextStyle(
                             color: statusColor,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: verifyColor.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: verifyColor.withOpacity(0.3),
-                            width: 1,
-                          ),
-                        ),
-                        child: Text(
-                          verificationStatus,
-                          style: TextStyle(
-                            color: verifyColor,
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
                           ),
@@ -154,7 +129,7 @@ class TicketDetailPage extends StatelessWidget {
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        ticket['room'],
+                        ticket.roomId.toString(),
                         style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                       ),
                       const SizedBox(width: 16),
@@ -165,7 +140,7 @@ class TicketDetailPage extends StatelessWidget {
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        'Created: ${ticket['createdDate']}',
+                        'Created: ${formatDate(ticket.createdAt, withDayName: true)}',
                         style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                       ),
                     ],
@@ -194,41 +169,11 @@ class TicketDetailPage extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    ticket['description'],
+                    ticket.description ?? 'No description provided.',
                     style: const TextStyle(
                       fontSize: 15,
                       color: Color(0xFF1A1A1A),
                       height: 1.5,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  const Text(
-                    'Attachments',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF1A1A1A),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 12,
-                    runSpacing: 12,
-                    children: List.generate(
-                      2,
-                      (index) => Container(
-                        width: 100,
-                        height: 100,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(12),
-                          image: DecorationImage(
-                            image: NetworkImage(
-                              'https://picsum.photos/200?random=$index',
-                            ),
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                      ),
                     ),
                   ),
                 ],
@@ -259,15 +204,6 @@ class TicketDetailPage extends StatelessWidget {
                     '10 Jan 2025, 09:00',
                     true,
                   ),
-                  if (verificationStatus != 'Pending') ...[
-                    _buildTimelineItem(
-                      verificationStatus == 'Verified'
-                          ? 'Verified by Admin'
-                          : 'Rejected by Admin',
-                      '11 Jan 2025, 10:30',
-                      true,
-                    ),
-                  ],
                   if (workStatus == 'In Progress' ||
                       workStatus == 'Completed') ...[
                     _buildTimelineItem(
@@ -284,7 +220,7 @@ class TicketDetailPage extends StatelessWidget {
                   if (workStatus == 'Completed') ...[
                     _buildTimelineItem(
                       'Completed',
-                      ticket['completionDate'] ?? '14 Jan 2025, 16:00',
+                      ticket.updatedAt.toString(),
                       false,
                     ),
                   ],
@@ -311,21 +247,11 @@ class TicketDetailPage extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  _buildStatusRow('Work Status', workStatus, statusColor),
-                  const SizedBox(height: 12),
                   _buildStatusRow(
-                    'Verification Status',
-                    verificationStatus,
-                    verifyColor,
+                    'Work Status',
+                    workStatus ?? 'Pending',
+                    statusColor,
                   ),
-                  if (ticket['completionDate'] != null) ...[
-                    const SizedBox(height: 12),
-                    _buildStatusRow(
-                      'Completion Date',
-                      ticket['completionDate'],
-                      Colors.grey[800]!,
-                    ),
-                  ],
                   const SizedBox(height: 12),
                   _buildStatusRow(
                     'Assigned Staff',
@@ -409,37 +335,41 @@ class TicketDetailPage extends StatelessWidget {
     );
   }
 
-  void _showDeleteConfirmation(BuildContext context) {
+  void _showDeleteConfirmation(BuildContext context, WidgetRef ref) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text(
-          'Delete Ticket',
+          'Hapus Tiket',
           style: TextStyle(
             fontWeight: FontWeight.bold,
             color: Color(0xFF1A1A1A),
           ),
         ),
         content: const Text(
-          'Are you sure you want to delete this ticket? This action cannot be undone.',
+          'Kamu yakin ingin menghapus tiket ini? Tindakan ini tidak dapat dibatalkan.',
           style: TextStyle(fontSize: 14, color: Color(0xFF757575)),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text(
-              'Cancel',
+              'Batal',
               style: TextStyle(color: Color(0xFF757575)),
             ),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
+              await ref
+                  .read(tenantTicketActionNotifierProvider.notifier)
+                  .deleteTicket(ticket.id ?? 0);
+              await ref.read(tenantDashboardProvider.notifier).refreshAll();
               Navigator.pop(context);
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content: Text('Ticket deleted successfully'),
+                  content: Text('Tiket berhasil dihapus'),
                   backgroundColor: Colors.red,
                 ),
               );

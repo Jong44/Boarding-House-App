@@ -1,42 +1,35 @@
+import 'package:boarding_house_app/modules/admin/features/models/create_tenant_request_model.dart';
+import 'package:boarding_house_app/modules/admin/features/provider/admin_contract_action_provider.dart';
+import 'package:boarding_house_app/modules/admin/features/provider/admin_dashboard_provider.dart';
+import 'package:boarding_house_app/modules/admin/features/provider/admin_tenants_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class AdminCreateTenantPage extends StatefulWidget {
+class AdminCreateTenantPage extends ConsumerStatefulWidget {
   const AdminCreateTenantPage({Key? key}) : super(key: key);
 
   @override
-  State<AdminCreateTenantPage> createState() => _AdminCreateTenantPageState();
+  ConsumerState<AdminCreateTenantPage> createState() =>
+      _AdminCreateTenantPageState();
 }
 
-class _AdminCreateTenantPageState extends State<AdminCreateTenantPage> {
+class _AdminCreateTenantPageState extends ConsumerState<AdminCreateTenantPage> {
   final _formKey = GlobalKey<FormState>();
 
-  // Controllers
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _emailController = TextEditingController();
   final _addressController = TextEditingController();
   final _contractNumberController = TextEditingController();
   final _notesController = TextEditingController();
+  final _priceController = TextEditingController();
 
-  // Dropdown values
   String? _selectedPropertyType;
   String? _selectedRoom;
   String? _selectedContractDuration;
+  String? _selectedRoomType;
   DateTime? _startDate;
   DateTime? _endDate;
-
-  final List<String> _propertyTypes = [
-    'Kost (3x4)',
-    'Kost (3x5)',
-    'Kontrakan Tipe 45',
-  ];
-
-  final List<String> _contractDurations = [
-    '1 Bulan',
-    '3 Bulan',
-    '6 Bulan',
-    '12 Bulan',
-  ];
 
   @override
   void dispose() {
@@ -46,6 +39,7 @@ class _AdminCreateTenantPageState extends State<AdminCreateTenantPage> {
     _addressController.dispose();
     _contractNumberController.dispose();
     _notesController.dispose();
+    _priceController.dispose();
     super.dispose();
   }
 
@@ -80,8 +74,71 @@ class _AdminCreateTenantPageState extends State<AdminCreateTenantPage> {
     }
   }
 
+  Future<void> _refreshData() async {
+    await ref.read(adminTenantsProvider.notifier).refreshContracts();
+    await ref.read(dashboardProvider.notifier).refreshAll();
+  }
+
+  Future<void> _submitForm(
+    BuildContext context,
+    AsyncValue<void> submitState,
+  ) async {
+    if (_formKey.currentState!.validate()) {
+      if (submitState.isLoading) {
+        return;
+      }
+
+      final request = CreateTenantRequestModel(
+        fullName: _nameController.text,
+        phoneNumber: _phoneController.text,
+        email: _emailController.text,
+        address: _addressController.text,
+        roomId: int.tryParse(_selectedRoom ?? '') ?? 0,
+        categoryContract: _selectedContractDuration ?? 'monthly',
+        startDate: _startDate ?? DateTime.now(),
+        price: double.tryParse(_priceController.text) ?? 0.0,
+      );
+
+      if (!request.validate()) {
+        // Show error messages
+        final errorMessages = request.errors.values.join('\n');
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(errorMessages)));
+        return;
+      }
+
+      ref
+          .read(adminTenantActionNotifierProvider.notifier)
+          .createTenant(request.toMap())
+          .then((_) async {
+            await _refreshData();
+            Navigator.pop(context);
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Tenant berhasil dibuat.')),
+            );
+          })
+          .catchError((error) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Gagal membuat tenant: $error')),
+            );
+          });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final state = ref.watch(dashboardProvider);
+    final submitState = ref.watch(adminTenantActionNotifierProvider);
+
+    if (state.isLoadingProperties) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (state.errorProperties != null) {
+      return Center(child: Text(state.errorProperties!));
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
@@ -138,10 +195,16 @@ class _AdminCreateTenantPageState extends State<AdminCreateTenantPage> {
               const SizedBox(height: 16),
               _buildTextField(
                 controller: _emailController,
-                label: 'Email (Opsional)',
+                label: 'Email',
                 hint: 'email@example.com',
                 icon: Icons.email_outlined,
                 keyboardType: TextInputType.emailAddress,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Email wajib diisi';
+                  }
+                  return null;
+                },
               ),
               const SizedBox(height: 16),
               _buildTextField(
@@ -158,10 +221,11 @@ class _AdminCreateTenantPageState extends State<AdminCreateTenantPage> {
             const SizedBox(height: 12),
             _buildWhiteCard([
               _buildDropdown(
-                label: 'Tipe Properti',
+                label: 'Properti',
                 value: _selectedPropertyType,
-                items: _propertyTypes,
-                hint: 'Pilih tipe properti',
+                items:
+                    state.properties?.map((e) => e.name).toSet().toList() ?? [],
+                hint: 'Pilih properti',
                 icon: Icons.apartment_outlined,
                 onChanged: (value) {
                   setState(() {
@@ -172,9 +236,41 @@ class _AdminCreateTenantPageState extends State<AdminCreateTenantPage> {
               ),
               const SizedBox(height: 16),
               _buildDropdown(
+                label: 'Tipe Kamar',
+                value: _selectedRoomType,
+                items:
+                    state.properties
+                        ?.firstWhere(
+                          (prop) => prop.id.toString() == _selectedPropertyType,
+                          orElse: () => state.properties!.first,
+                        )
+                        ?.roomTypes
+                        ?.map((e) => e.name)
+                        .toList() ??
+                    [],
+
+                hint: 'Pilih tipe kamar',
+                icon: Icons.meeting_room_outlined,
+                onChanged: (value) {
+                  setState(() {
+                    _selectedRoomType = value;
+                  });
+                },
+              ),
+              const SizedBox(height: 16),
+              _buildDropdown(
                 label: 'Nomor Kamar',
                 value: _selectedRoom,
-                items: const ['A-12', 'A-13', 'B-01', 'B-02', 'C-05'],
+                items:
+                    state.properties
+                        ?.firstWhere(
+                          (prop) => prop.name == _selectedPropertyType,
+                          orElse: () => state.properties!.first,
+                        )
+                        ?.rooms
+                        ?.map((e) => e.id.toString())
+                        .toList() ??
+                    [],
                 hint: 'Pilih nomor kamar',
                 icon: Icons.meeting_room_outlined,
                 onChanged: (value) {
@@ -189,29 +285,10 @@ class _AdminCreateTenantPageState extends State<AdminCreateTenantPage> {
             _buildSectionTitle('Informasi Kontrak'),
             const SizedBox(height: 12),
             _buildWhiteCard([
-              _buildTextField(
-                controller: _contractNumberController,
-                label: 'Nomor Kontrak',
-                hint: 'Contoh: KTR-2025-001',
-                icon: Icons.description_outlined,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Nomor kontrak wajib diisi';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              _buildDateField(
-                label: 'Tanggal Mulai',
-                date: _startDate,
-                onTap: () => _selectDate(context, true),
-              ),
-              const SizedBox(height: 16),
               _buildDropdown(
-                label: 'Durasi Sewa',
+                label: 'Category Kontrak',
                 value: _selectedContractDuration,
-                items: _contractDurations,
+                items: ['monthly', 'yearly'],
                 hint: 'Pilih durasi',
                 icon: Icons.calendar_today_outlined,
                 onChanged: (value) {
@@ -222,22 +299,26 @@ class _AdminCreateTenantPageState extends State<AdminCreateTenantPage> {
               ),
               const SizedBox(height: 16),
               _buildDateField(
-                label: 'Tanggal Berakhir',
-                date: _endDate,
-                onTap: () => _selectDate(context, false),
+                label: 'Tanggal Mulai',
+                date: _startDate,
+                onTap: () => _selectDate(context, true),
               ),
-            ]),
-
-            const SizedBox(height: 24),
-            _buildSectionTitle('Catatan Tambahan'),
-            const SizedBox(height: 12),
-            _buildWhiteCard([
+              const SizedBox(height: 16),
               _buildTextField(
-                controller: _notesController,
-                label: 'Catatan Admin',
-                hint: 'Tambahkan catatan jika diperlukan',
-                icon: Icons.note_outlined,
-                maxLines: 3,
+                controller: _priceController,
+                label: 'Harga',
+                hint: 'Masukkan harga',
+                icon: Icons.attach_money_outlined,
+                keyboardType: TextInputType.number,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Harga wajib diisi';
+                  }
+                  if (double.tryParse(value) == null) {
+                    return 'Harga harus berupa angka';
+                  }
+                  return null;
+                },
               ),
             ]),
 
@@ -273,13 +354,9 @@ class _AdminCreateTenantPageState extends State<AdminCreateTenantPage> {
                     onPressed: () {
                       if (_formKey.currentState!.validate()) {
                         // Handle submit
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Penyewa berhasil ditambahkan'),
-                            backgroundColor: Color(0xFFFF6B35),
-                          ),
-                        );
-                        Navigator.pop(context);
+                        if (submitState.isLoading) return;
+
+                        _submitForm(context, submitState);
                       }
                     },
                     style: ElevatedButton.styleFrom(

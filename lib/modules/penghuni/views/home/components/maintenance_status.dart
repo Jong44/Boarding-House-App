@@ -1,30 +1,58 @@
+import 'package:boarding_house_app/modules/admin/features/models/maintenance_model.dart';
 import 'package:flutter/material.dart';
 
 class MaintenanceStatus extends StatefulWidget {
-  const MaintenanceStatus({super.key});
+  final List<MaintenanceModel> maintenances;
+  const MaintenanceStatus({super.key, required this.maintenances});
 
   @override
-  State<MaintenanceStatus> createState() => _MaintenanceStatusState();
+  State<MaintenanceStatus> createState() =>
+      _MaintenanceStatusState(maintenances: maintenances);
 }
 
 class _MaintenanceStatusState extends State<MaintenanceStatus> {
+  final List<MaintenanceModel> maintenances;
+  _MaintenanceStatusState({required this.maintenances});
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        _buildMaintenanceCard(
-          'Perbaikan AC',
-          'In Progress',
-          const Color(0xFFFF9800),
-          Icons.ac_unit_outlined,
-        ),
-        const SizedBox(height: 12),
-        _buildMaintenanceCard(
-          'Keran Bocor',
-          'Completed',
-          const Color(0xFF4CAF50),
-          Icons.water_drop_outlined,
-        ),
+        ...maintenances.map((maintenance) {
+          Color statusColor;
+          IconData icon;
+
+          switch (maintenance.status!.toLowerCase()) {
+            case 'pending':
+              statusColor = Colors.orange;
+              icon = Icons.hourglass_empty;
+              break;
+            case 'in_progress':
+              statusColor = Colors.blue;
+              icon = Icons.build;
+              break;
+            case 'completed':
+              statusColor = Colors.green;
+              icon = Icons.check_circle;
+              break;
+            case 'rejected':
+              statusColor = Colors.red;
+              icon = Icons.cancel;
+              break;
+            default:
+              statusColor = Colors.grey;
+              icon = Icons.help_outline;
+          }
+
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12.0),
+            child: _buildMaintenanceCard(
+              maintenance.description ?? '',
+              maintenance.status!.replaceAll('_', ' ').toUpperCase(),
+              statusColor,
+              icon,
+            ),
+          );
+        }).toList(),
       ],
     );
   }

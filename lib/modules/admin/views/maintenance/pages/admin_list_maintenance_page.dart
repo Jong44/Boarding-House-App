@@ -1,111 +1,22 @@
+import 'package:boarding_house_app/modules/admin/features/models/maintenance_model.dart';
+import 'package:boarding_house_app/modules/admin/features/provider/admin_maintenance_provider.dart';
 import 'package:boarding_house_app/modules/admin/views/maintenance/pages/admin_detail_maintenance_page.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-// Model untuk Maintenance Ticket
-class MaintenanceTicket {
-  final String ticketId;
-  final String tenantName;
-  final String room;
-  final DateTime dateSubmitted;
-  final String category;
-  final String priority;
-  final String status;
-  final String description;
-
-  MaintenanceTicket({
-    required this.ticketId,
-    required this.tenantName,
-    required this.room,
-    required this.dateSubmitted,
-    required this.category,
-    required this.priority,
-    required this.status,
-    required this.description,
-  });
-}
-
-class AdminListMaintenancePage extends StatefulWidget {
+class AdminListMaintenancePage extends ConsumerStatefulWidget {
   const AdminListMaintenancePage({Key? key}) : super(key: key);
 
   @override
-  State<AdminListMaintenancePage> createState() =>
+  ConsumerState<AdminListMaintenancePage> createState() =>
       _AdminListMaintenancePageState();
 }
 
-class _AdminListMaintenancePageState extends State<AdminListMaintenancePage> {
+class _AdminListMaintenancePageState
+    extends ConsumerState<AdminListMaintenancePage> {
   String selectedStatus = 'All';
   String selectedPriority = 'All';
   String searchQuery = '';
-
-  // Dummy data
-  final List<MaintenanceTicket> tickets = [
-    MaintenanceTicket(
-      ticketId: 'MT-001',
-      tenantName: 'John Doe',
-      room: 'Room 101',
-      dateSubmitted: DateTime(2025, 1, 15),
-      category: 'AC',
-      priority: 'High',
-      status: 'Pending',
-      description: 'AC not cooling properly',
-    ),
-    MaintenanceTicket(
-      ticketId: 'MT-002',
-      tenantName: 'Jane Smith',
-      room: 'Room 205',
-      dateSubmitted: DateTime(2025, 1, 14),
-      category: 'Listrik',
-      priority: 'Medium',
-      status: 'In Progress',
-      description: 'Light bulb not working',
-    ),
-    MaintenanceTicket(
-      ticketId: 'MT-003',
-      tenantName: 'Robert Johnson',
-      room: 'Room 302',
-      dateSubmitted: DateTime(2025, 1, 13),
-      category: 'Air',
-      priority: 'High',
-      status: 'Pending',
-      description: 'Water leak in bathroom',
-    ),
-    MaintenanceTicket(
-      ticketId: 'MT-004',
-      tenantName: 'Emily Davis',
-      room: 'Room 108',
-      dateSubmitted: DateTime(2025, 1, 12),
-      category: 'WiFi',
-      priority: 'Low',
-      status: 'Completed',
-      description: 'Slow internet connection',
-    ),
-    MaintenanceTicket(
-      ticketId: 'MT-005',
-      tenantName: 'Michael Brown',
-      room: 'Room 410',
-      dateSubmitted: DateTime(2025, 1, 11),
-      category: 'Furniture',
-      priority: 'Medium',
-      status: 'In Progress',
-      description: 'Broken desk drawer',
-    ),
-  ];
-
-  List<MaintenanceTicket> get filteredTickets {
-    return tickets.where((ticket) {
-      bool matchesStatus =
-          selectedStatus == 'All' || ticket.status == selectedStatus;
-      bool matchesPriority =
-          selectedPriority == 'All' || ticket.priority == selectedPriority;
-      bool matchesSearch =
-          searchQuery.isEmpty ||
-          ticket.tenantName.toLowerCase().contains(searchQuery.toLowerCase()) ||
-          ticket.room.toLowerCase().contains(searchQuery.toLowerCase()) ||
-          ticket.ticketId.toLowerCase().contains(searchQuery.toLowerCase());
-
-      return matchesStatus && matchesPriority && matchesSearch;
-    }).toList();
-  }
 
   Color getPriorityColor(String priority) {
     switch (priority) {
@@ -122,11 +33,11 @@ class _AdminListMaintenancePageState extends State<AdminListMaintenancePage> {
 
   Color getStatusColor(String status) {
     switch (status) {
-      case 'Pending':
+      case 'Pending' || 'open':
         return Colors.orange;
-      case 'In Progress':
+      case 'In Progress' || 'in_progress':
         return Colors.blue;
-      case 'Completed':
+      case 'Completed' || 'completed':
         return Colors.green;
       case 'Cancelled':
         return Colors.grey;
@@ -135,8 +46,42 @@ class _AdminListMaintenancePageState extends State<AdminListMaintenancePage> {
     }
   }
 
+  String getTextStatus(String status) {
+    switch (status) {
+      case 'open':
+        return 'Pending';
+      case 'in_progress':
+        return 'In Progress';
+      case 'completed':
+        return 'Completed';
+      default:
+        return status;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final state = ref.watch(adminMaintenanceNotifierProvider);
+
+    if (state.isLoading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    if (state.error != null) {
+      return Scaffold(
+        body: Center(
+          child: Text(
+            'Error: ${state.error}',
+            style: const TextStyle(color: Colors.red),
+          ),
+        ),
+      );
+    }
+
+    final tickets = searchQuery == ''
+        ? state.maintenances
+        : state.maintenancesFiltered;
+
     return Scaffold(
       backgroundColor: Colors.grey[50],
       body: Column(
@@ -208,7 +153,7 @@ class _AdminListMaintenancePageState extends State<AdminListMaintenancePage> {
 
           // Tickets List
           Expanded(
-            child: filteredTickets.isEmpty
+            child: tickets.isEmpty
                 ? Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -231,9 +176,9 @@ class _AdminListMaintenancePageState extends State<AdminListMaintenancePage> {
                   )
                 : ListView.builder(
                     padding: const EdgeInsets.all(16),
-                    itemCount: filteredTickets.length,
+                    itemCount: tickets.length,
                     itemBuilder: (context, index) {
-                      final ticket = filteredTickets[index];
+                      final ticket = tickets[index];
                       return _buildTicketCard(ticket);
                     },
                   ),
@@ -264,7 +209,7 @@ class _AdminListMaintenancePageState extends State<AdminListMaintenancePage> {
     );
   }
 
-  Widget _buildTicketCard(MaintenanceTicket ticket) {
+  Widget _buildTicketCard(MaintenanceModel ticket) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -302,42 +247,41 @@ class _AdminListMaintenancePageState extends State<AdminListMaintenancePage> {
                   children: [
                     // Ticket ID
                     Text(
-                      ticket.ticketId,
+                      "Ticket #${ticket.id}",
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    // Priority Badge
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: getPriorityColor(
-                          ticket.priority,
-                        ).withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.flag,
-                            size: 14,
-                            color: getPriorityColor(ticket.priority),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
                           ),
-                          const SizedBox(width: 4),
-                          Text(
-                            ticket.priority,
+                          decoration: BoxDecoration(
+                            color: getStatusColor(
+                              getTextStatus(ticket.status ?? 'Pending'),
+                            ).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            getTextStatus(ticket.status ?? 'Pending'),
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
-                              color: getPriorityColor(ticket.priority),
+                              color: getStatusColor(ticket.status ?? 'Pending'),
                             ),
                           ),
-                        ],
-                      ),
+                        ),
+                        const Icon(
+                          Icons.arrow_forward_ios,
+                          size: 16,
+                          color: Colors.grey,
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -353,7 +297,7 @@ class _AdminListMaintenancePageState extends State<AdminListMaintenancePage> {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      ticket.tenantName,
+                      ticket.tenant?.fullName ?? 'Unknown Tenant',
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
@@ -367,7 +311,7 @@ class _AdminListMaintenancePageState extends State<AdminListMaintenancePage> {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      ticket.room,
+                      "Kamar ${ticket.room?.id ?? 'Unknown'}",
                       style: const TextStyle(fontSize: 14, color: Colors.grey),
                     ),
                   ],
@@ -377,25 +321,6 @@ class _AdminListMaintenancePageState extends State<AdminListMaintenancePage> {
                 // Category & Date
                 Row(
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFF5722).withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        ticket.category,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Color(0xFFFF5722),
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
                     const Icon(
                       Icons.calendar_today_outlined,
                       size: 14,
@@ -403,7 +328,7 @@ class _AdminListMaintenancePageState extends State<AdminListMaintenancePage> {
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      '${ticket.dateSubmitted.day}/${ticket.dateSubmitted.month}/${ticket.dateSubmitted.year}',
+                      '${ticket.createdAt.day}/${ticket.createdAt.month}/${ticket.createdAt.year}',
                       style: const TextStyle(fontSize: 12, color: Colors.grey),
                     ),
                   ],
@@ -412,7 +337,7 @@ class _AdminListMaintenancePageState extends State<AdminListMaintenancePage> {
 
                 // Description
                 Text(
-                  ticket.description,
+                  ticket.description ?? 'Deskripsi tidak tersedia',
                   style: TextStyle(fontSize: 13, color: Colors.grey[700]),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
@@ -420,120 +345,11 @@ class _AdminListMaintenancePageState extends State<AdminListMaintenancePage> {
                 const SizedBox(height: 12),
 
                 // Status
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: getStatusColor(ticket.status).withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        ticket.status,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: getStatusColor(ticket.status),
-                        ),
-                      ),
-                    ),
-                    const Icon(
-                      Icons.arrow_forward_ios,
-                      size: 16,
-                      color: Colors.grey,
-                    ),
-                  ],
-                ),
               ],
             ),
           ),
         ),
       ),
-    );
-  }
-
-  void _showFilterBottomSheet() {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            return Container(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Filter Options',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 24),
-
-                  const Text(
-                    'Priority',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                  ),
-                  const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 8,
-                    children: ['All', 'High', 'Medium', 'Low'].map((priority) {
-                      return ChoiceChip(
-                        label: Text(priority),
-                        selected: selectedPriority == priority,
-                        onSelected: (selected) {
-                          setModalState(() {
-                            setState(() {
-                              selectedPriority = priority;
-                            });
-                          });
-                        },
-                        selectedColor: const Color(0xFFFF5722),
-                        labelStyle: TextStyle(
-                          color: selectedPriority == priority
-                              ? Colors.white
-                              : Colors.black,
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                  const SizedBox(height: 24),
-
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFFF5722),
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: const Text(
-                        'Apply Filters',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
     );
   }
 }

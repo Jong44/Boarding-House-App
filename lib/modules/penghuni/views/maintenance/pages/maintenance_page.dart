@@ -1,60 +1,39 @@
+import 'package:boarding_house_app/modules/admin/features/models/maintenance_model.dart';
+import 'package:boarding_house_app/modules/admin/views/maintenance/pages/admin_list_maintenance_page.dart';
+import 'package:boarding_house_app/modules/penghuni/features/provider/tenant_dashboard_provider.dart';
+import 'package:boarding_house_app/modules/penghuni/features/provider/tenant_invoice_action_provider.dart';
 import 'package:boarding_house_app/modules/penghuni/views/maintenance/pages/create_ticket_page.dart';
 import 'package:boarding_house_app/modules/penghuni/views/maintenance/pages/detail_ticket_page.dart';
+import 'package:boarding_house_app/utils/format_date.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class MaintenancePage extends StatefulWidget {
+class MaintenancePage extends ConsumerStatefulWidget {
   const MaintenancePage({super.key});
 
   @override
-  State<MaintenancePage> createState() => _MaintenancePageState();
+  ConsumerState<MaintenancePage> createState() => _MaintenancePageState();
 }
 
-class _MaintenancePageState extends State<MaintenancePage> {
+class _MaintenancePageState extends ConsumerState<MaintenancePage> {
   String _selectedFilter = 'All';
-
-  final List<Map<String, dynamic>> _tickets = [
-    {
-      'id': 'MT-2025-001',
-      'room': 'Room A12',
-      'createdDate': '10 Jan 2025',
-      'description': 'Lampu kamar mandi mati, perlu diganti segera',
-      'workStatus': 'Open',
-      'verificationStatus': 'Pending',
-      'completionDate': null,
-    },
-    {
-      'id': 'MT-2025-002',
-      'room': 'Room A12',
-      'createdDate': '5 Jan 2025',
-      'description': 'AC tidak dingin, mungkin perlu service',
-      'workStatus': 'In Progress',
-      'verificationStatus': 'Verified',
-      'completionDate': null,
-    },
-    {
-      'id': 'MT-2024-156',
-      'room': 'Room A12',
-      'createdDate': '20 Dec 2024',
-      'description': 'Pintu lemari rusak, engsel lepas',
-      'workStatus': 'Completed',
-      'verificationStatus': 'Verified',
-      'completionDate': '22 Dec 2024',
-    },
-  ];
-
-  List<Map<String, dynamic>> get _filteredTickets {
-    if (_selectedFilter == 'All') return _tickets;
-    return _tickets
-        .where(
-          (ticket) =>
-              ticket['workStatus'].replaceAll(' ', '') ==
-              _selectedFilter.replaceAll(' ', ''),
-        )
-        .toList();
-  }
 
   @override
   Widget build(BuildContext context) {
+    final state = ref.watch(tenantDashboardProvider);
+
+    if (state.isLoadingMaintenance) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    final _tickets = state.maintenance ?? [];
+
+    final _filteredTickets = _selectedFilter == 'All'
+        ? _tickets
+        : _tickets
+              .where((ticket) => ticket.status == _selectedFilter.toLowerCase())
+              .toList();
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
       body: SafeArea(
@@ -94,7 +73,8 @@ class _MaintenancePageState extends State<MaintenancePage> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const CreateTicketPage(),
+                        builder: (context) =>
+                            CreateTicketPage(contract: state.contract!),
                       ),
                     );
                   },
@@ -166,7 +146,8 @@ class _MaintenancePageState extends State<MaintenancePage> {
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       itemCount: _filteredTickets.length,
                       itemBuilder: (context, index) {
-                        return _buildTicketCard(_filteredTickets[index]);
+                        final ticket = _filteredTickets[index];
+                        return _buildTicketCard(ticket);
                       },
                     ),
             ),
@@ -210,8 +191,8 @@ class _MaintenancePageState extends State<MaintenancePage> {
     );
   }
 
-  Widget _buildTicketCard(Map<String, dynamic> ticket) {
-    final workStatus = ticket['workStatus'];
+  Widget _buildTicketCard(MaintenanceModel ticket) {
+    final workStatus = ticket.status;
     Color statusColor;
     Color statusBgColor;
 
@@ -227,19 +208,6 @@ class _MaintenancePageState extends State<MaintenancePage> {
       default:
         statusColor = const Color(0xFFF44336);
         statusBgColor = const Color(0xFFF44336).withOpacity(0.1);
-    }
-
-    final verificationStatus = ticket['verificationStatus'];
-    Color verifyColor;
-    switch (verificationStatus) {
-      case 'Verified':
-        verifyColor = const Color(0xFF4CAF50);
-        break;
-      case 'Rejected':
-        verifyColor = const Color(0xFFF44336);
-        break;
-      default:
-        verifyColor = const Color(0xFF9E9E9E);
     }
 
     return Container(
@@ -267,7 +235,7 @@ class _MaintenancePageState extends State<MaintenancePage> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      ticket['id'],
+                      ticket.id.toString(),
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
@@ -286,7 +254,7 @@ class _MaintenancePageState extends State<MaintenancePage> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
-                            workStatus,
+                            workStatus ?? 'Pending',
                             style: TextStyle(
                               color: statusColor,
                               fontSize: 11,
@@ -295,28 +263,6 @@ class _MaintenancePageState extends State<MaintenancePage> {
                           ),
                         ),
                         const SizedBox(width: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: verifyColor.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(
-                              color: verifyColor.withOpacity(0.3),
-                              width: 1,
-                            ),
-                          ),
-                          child: Text(
-                            verificationStatus,
-                            style: TextStyle(
-                              color: verifyColor,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
                       ],
                     ),
                   ],
@@ -325,7 +271,7 @@ class _MaintenancePageState extends State<MaintenancePage> {
 
                 // Description
                 Text(
-                  ticket['description'],
+                  ticket.description ?? 'No description provided.',
                   style: const TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
@@ -346,7 +292,7 @@ class _MaintenancePageState extends State<MaintenancePage> {
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      ticket['room'],
+                      ticket.roomId.toString(),
                       style: TextStyle(fontSize: 13, color: Colors.grey[600]),
                     ),
                     const SizedBox(width: 16),
@@ -357,46 +303,13 @@ class _MaintenancePageState extends State<MaintenancePage> {
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      ticket['createdDate'],
+                      formatDate(ticket.createdAt, withDayName: true),
                       style: TextStyle(fontSize: 13, color: Colors.grey[600]),
                     ),
                   ],
                 ),
 
                 // Completion Date (if completed)
-                if (ticket['completionDate'] != null) ...[
-                  const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF4CAF50).withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          Icons.check_circle_outline,
-                          size: 14,
-                          color: Color(0xFF4CAF50),
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Completed on ${ticket['completionDate']}',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: Color(0xFF4CAF50),
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-
                 const SizedBox(height: 12),
 
                 // View Detail Button

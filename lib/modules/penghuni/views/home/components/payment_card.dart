@@ -1,13 +1,20 @@
+import 'package:boarding_house_app/models/contract_model.dart';
+import 'package:boarding_house_app/utils/format_date.dart';
 import 'package:flutter/material.dart';
 
 class PaymentCard extends StatefulWidget {
-  const PaymentCard({super.key});
+  final ContractModel? contract;
+  const PaymentCard({super.key, this.contract});
 
   @override
-  State<PaymentCard> createState() => _PaymentCardState();
+  State<PaymentCard> createState() => _PaymentCardState(contract: contract);
 }
 
 class _PaymentCardState extends State<PaymentCard> {
+  final ContractModel? contract;
+
+  _PaymentCardState({this.contract});
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -41,8 +48,8 @@ class _PaymentCardState extends State<PaymentCard> {
             ],
           ),
           const SizedBox(height: 12),
-          const Text(
-            'Rp 2.500.000',
+          Text(
+            'Rp ${contract?.price ?? 'N/A'}',
             style: TextStyle(
               fontSize: 32,
               fontWeight: FontWeight.bold,
@@ -70,8 +77,13 @@ class _PaymentCardState extends State<PaymentCard> {
                       color: Colors.white.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Text(
-                      'UNPAID',
+                    child: Text(
+                      contract?.invoices != null &&
+                              contract!.invoices!.isNotEmpty &&
+                              contract!.invoices!.first.payments != null &&
+                              contract!.invoices!.first.payments!.isNotEmpty
+                          ? 'Lunas'
+                          : 'Belum Dibayar',
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 12,
@@ -81,7 +93,7 @@ class _PaymentCardState extends State<PaymentCard> {
                   ),
                 ],
               ),
-              const Column(
+              Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
@@ -90,7 +102,12 @@ class _PaymentCardState extends State<PaymentCard> {
                   ),
                   SizedBox(height: 4),
                   Text(
-                    '30 Nov 2025',
+                    contract?.invoices != null && contract!.invoices!.isNotEmpty
+                        ? formatDate(
+                            contract!.invoices!.first.dueDate,
+                            withDayName: true,
+                          )
+                        : 'N/A',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 14,

@@ -1,55 +1,36 @@
 // Invoices Page
+import 'package:boarding_house_app/models/invoice_model.dart';
+import 'package:boarding_house_app/modules/penghuni/features/provider/tenant_invoices_provider.dart';
 import 'package:boarding_house_app/modules/penghuni/views/invoice/pages/detail_invoice_page.dart';
+import 'package:boarding_house_app/utils/format_date.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class InvoicesPage extends StatefulWidget {
+class InvoicesPage extends ConsumerStatefulWidget {
   const InvoicesPage({Key? key}) : super(key: key);
 
   @override
-  State<InvoicesPage> createState() => _InvoicesPageState();
+  ConsumerState<InvoicesPage> createState() => _InvoicesPageState();
 }
 
-class _InvoicesPageState extends State<InvoicesPage> {
+class _InvoicesPageState extends ConsumerState<InvoicesPage> {
   String _selectedFilter = 'All';
-
-  final List<Map<String, dynamic>> _invoices = [
-    {
-      'code': 'INV-2025-00123',
-      'period': 'January 2025 Boarding Fee',
-      'room': 'Room A12',
-      'total': 1500000,
-      'paid': 0,
-      'status': 'Unpaid',
-      'dueDate': '12 Jan 2025',
-    },
-    {
-      'code': 'INV-2025-00122',
-      'period': 'December 2024 Boarding Fee',
-      'room': 'Room A12',
-      'total': 1500000,
-      'paid': 600000,
-      'status': 'Partial',
-      'dueDate': '15 Dec 2024',
-    },
-    {
-      'code': 'INV-2025-00121',
-      'period': 'November 2024 Boarding Fee',
-      'room': 'Room A12',
-      'total': 1450000,
-      'paid': 1450000,
-      'status': 'Paid',
-      'dueDate': '12 Nov 2024',
-    },
-  ];
-
-  List<Map<String, dynamic>> get _filteredInvoices {
-    if (_selectedFilter == 'All') return _invoices;
-    return _invoices.where((inv) => inv['status'] == _selectedFilter).toList();
-  }
 
   @override
   Widget build(BuildContext context) {
+    final tenantInvoicesState = ref.watch(tenantInvoicesProvider);
+
+    if (tenantInvoicesState.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (tenantInvoicesState.errorMessage != null) {
+      return Center(child: Text('Error: ${tenantInvoicesState.errorMessage}'));
+    }
+
+    final invoices = tenantInvoicesState.invoices;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
       body: SafeArea(
@@ -104,9 +85,9 @@ class _InvoicesPageState extends State<InvoicesPage> {
             Expanded(
               child: ListView.builder(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
-                itemCount: _filteredInvoices.length,
+                itemCount: invoices.length,
                 itemBuilder: (context, index) {
-                  return _buildInvoiceCard(_filteredInvoices[index]);
+                  return _buildInvoiceCard(invoices[index]);
                 },
               ),
             ),
@@ -150,17 +131,17 @@ class _InvoicesPageState extends State<InvoicesPage> {
     );
   }
 
-  Widget _buildInvoiceCard(Map<String, dynamic> invoice) {
-    final status = invoice['status'];
+  Widget _buildInvoiceCard(InvoiceModel invoice) {
+    final status = invoice.status;
     Color statusColor;
     Color statusBgColor;
 
     switch (status) {
-      case 'Paid':
+      case 'paid':
         statusColor = const Color(0xFF4CAF50);
         statusBgColor = const Color(0xFF4CAF50).withOpacity(0.1);
         break;
-      case 'Partial':
+      case 'partial':
         statusColor = const Color(0xFFFF9800);
         statusBgColor = const Color(0xFFFF9800).withOpacity(0.1);
         break;
@@ -169,8 +150,13 @@ class _InvoicesPageState extends State<InvoicesPage> {
         statusBgColor = const Color(0xFFF44336).withOpacity(0.1);
     }
 
-    final total = invoice['total'] as int;
-    final paid = invoice['paid'] as int;
+    final total = invoice.totalAmount ?? 0;
+    final paid =
+        invoice.payments?.fold<double>(
+          0,
+          (previousValue, payment) => previousValue + (payment.amount ?? 0),
+        ) ??
+        0;
     final remaining = total - paid;
     final progress = paid / total;
 
@@ -199,7 +185,7 @@ class _InvoicesPageState extends State<InvoicesPage> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      invoice['code'],
+                      invoice.id.toString(),
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
@@ -216,7 +202,7 @@ class _InvoicesPageState extends State<InvoicesPage> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
-                        status,
+                        status ?? '',
                         style: TextStyle(
                           color: statusColor,
                           fontSize: 12,
@@ -228,17 +214,6 @@ class _InvoicesPageState extends State<InvoicesPage> {
                 ),
                 const SizedBox(height: 12),
 
-                // Period
-                Text(
-                  invoice['period'],
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1A1A1A),
-                  ),
-                ),
-                const SizedBox(height: 8),
-
                 // Room
                 Row(
                   children: [
@@ -249,7 +224,7 @@ class _InvoicesPageState extends State<InvoicesPage> {
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      invoice['room'],
+                      invoice.contract?.roomDetails?.id.toString() ?? 'N/A',
                       style: TextStyle(fontSize: 13, color: Colors.grey[600]),
                     ),
                   ],
@@ -265,14 +240,14 @@ class _InvoicesPageState extends State<InvoicesPage> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            'Paid: Rp ${_formatCurrency(paid)}',
+                            'Paid: Rp ${_formatCurrency(paid.toInt())}',
                             style: const TextStyle(
                               fontSize: 12,
                               color: Color(0xFF757575),
                             ),
                           ),
                           Text(
-                            'Remaining: Rp ${_formatCurrency(remaining)}',
+                            'Remaining: Rp ${_formatCurrency(remaining.toInt())}',
                             style: const TextStyle(
                               fontSize: 12,
                               color: Color(0xFF757575),
@@ -313,7 +288,7 @@ class _InvoicesPageState extends State<InvoicesPage> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Rp ${_formatCurrency(total)}',
+                          'Rp ${_formatCurrency(total.toInt())}',
                           style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -342,7 +317,7 @@ class _InvoicesPageState extends State<InvoicesPage> {
                             ),
                             const SizedBox(width: 4),
                             Text(
-                              invoice['dueDate'],
+                              formatDate(invoice.dueDate),
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,

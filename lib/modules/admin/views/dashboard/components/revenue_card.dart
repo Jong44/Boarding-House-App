@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 
 class RevenueCard extends StatelessWidget {
-  const RevenueCard({super.key});
+  final Map<String, dynamic> data;
+  const RevenueCard({super.key, required this.data});
 
   @override
   Widget build(BuildContext context) {
@@ -51,21 +52,41 @@ class RevenueCard extends StatelessWidget {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF4CAF50).withOpacity(0.1),
+                      color: data['trendData'] > 0
+                          ? const Color(0xFF4CAF50).withOpacity(0.1)
+                          : data['trendData'] < 0
+                          ? const Color(0xFFFF5252).withOpacity(0.1)
+                          : const Color(0xFF9E9E9E).withOpacity(0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Row(
-                      children: const [
-                        Icon(
-                          Icons.trending_up_rounded,
-                          color: Color(0xFF4CAF50),
-                          size: 16,
-                        ),
+                      children: [
+                        data['trendData'] > 0
+                            ? const Icon(
+                                Icons.trending_up_rounded,
+                                color: Color(0xFF4CAF50),
+                                size: 16,
+                              )
+                            : data['trendData'] < 0
+                            ? const Icon(
+                                Icons.trending_down_rounded,
+                                color: Color(0xFFFF5252),
+                                size: 16,
+                              )
+                            : const Icon(
+                                Icons.trending_flat_rounded,
+                                color: Color(0xFF9E9E9E),
+                                size: 16,
+                              ),
                         SizedBox(width: 4),
                         Text(
-                          '+12%',
+                          '${data['trendData']}%',
                           style: TextStyle(
-                            color: Color(0xFF4CAF50),
+                            color: data['trendData'] > 0
+                                ? const Color(0xFF4CAF50)
+                                : data['trendData'] < 0
+                                ? const Color(0xFFFF5252)
+                                : const Color(0xFF9E9E9E),
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
                           ),
@@ -76,38 +97,12 @@ class RevenueCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 16),
-              const Text(
-                'Rp 34.550.000',
-                style: TextStyle(
+              Text(
+                'Rp ${data['totalIncome'].toStringAsFixed(0)}',
+                style: const TextStyle(
                   fontSize: 32,
                   fontWeight: FontWeight.bold,
                   color: Color(0xFF2D2D2D),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Dibandingkan bulan lalu: Rp 30.850.000',
-                style: TextStyle(fontSize: 13, color: Colors.grey[600]),
-              ),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Lihat Rekap Keuangan')),
-                    );
-                  },
-                  icon: const Icon(Icons.arrow_forward_rounded, size: 18),
-                  label: const Text('Lihat Rekap Keuangan'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFFFF6B35),
-                    side: const BorderSide(color: Color(0xFFFF6B35)),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
                 ),
               ),
             ],

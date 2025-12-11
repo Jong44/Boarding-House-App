@@ -1,13 +1,21 @@
+import 'package:boarding_house_app/models/contract_model.dart';
+import 'package:boarding_house_app/utils/format_date.dart';
 import 'package:flutter/material.dart';
 
 class ContractStatus extends StatefulWidget {
-  const ContractStatus({super.key});
+  final ContractModel contract;
+  const ContractStatus({super.key, required this.contract});
 
   @override
-  State<ContractStatus> createState() => _ContractStatusState();
+  State<ContractStatus> createState() =>
+      _ContractStatusState(contract: contract);
 }
 
 class _ContractStatusState extends State<ContractStatus> {
+  final ContractModel contract;
+
+  _ContractStatusState({required this.contract});
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -46,8 +54,8 @@ class _ContractStatusState extends State<ContractStatus> {
                   color: const Color(0xFF4CAF50).withOpacity(0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: const Text(
-                  'Active',
+                child: Text(
+                  contract.status ?? 'active',
                   style: TextStyle(
                     color: Color(0xFF4CAF50),
                     fontSize: 12,
@@ -58,8 +66,8 @@ class _ContractStatusState extends State<ContractStatus> {
             ],
           ),
           const SizedBox(height: 16),
-          const Text(
-            'Green Valley Residence',
+          Text(
+            contract.propertyDetails?.name ?? 'Nama Properti',
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
@@ -75,8 +83,8 @@ class _ContractStatusState extends State<ContractStatus> {
                 color: Color(0xFF757575),
               ),
               const SizedBox(width: 4),
-              const Text(
-                'Kamar A12',
+              Text(
+                "Kamar ${contract.roomDetails?.id ?? 'N/A'}",
                 style: TextStyle(fontSize: 14, color: Color(0xFF757575)),
               ),
               const SizedBox(width: 16),
@@ -86,8 +94,8 @@ class _ContractStatusState extends State<ContractStatus> {
                 color: Color(0xFF757575),
               ),
               const SizedBox(width: 4),
-              const Text(
-                'Bulanan',
+              Text(
+                "${contract.contractType == 'monthly' ? 'Bulanan' : 'Tahunan'}",
                 style: TextStyle(fontSize: 14, color: Color(0xFF757575)),
               ),
             ],
@@ -109,18 +117,22 @@ class _ContractStatusState extends State<ContractStatus> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: RichText(
-                    text: const TextSpan(
+                    text: TextSpan(
                       style: TextStyle(fontSize: 13, color: Color(0xFF1A1A1A)),
                       children: [
                         TextSpan(text: 'Kontrak akan berakhir dalam '),
                         TextSpan(
-                          text: '12 hari',
+                          text:
+                              '${contract.endDate.difference(DateTime.now()).inDays} hari',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             color: Color(0xFFFF6B2C),
                           ),
                         ),
-                        TextSpan(text: ' (15 Des 2025)'),
+                        TextSpan(
+                          text:
+                              ' ${formatDate(contract.endDate, withDayName: true)}.',
+                        ),
                       ],
                     ),
                   ),

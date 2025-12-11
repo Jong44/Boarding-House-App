@@ -1,24 +1,37 @@
 import 'dart:io';
 
+import 'package:boarding_house_app/modules/admin/features/service/contract_service.dart';
+import 'package:boarding_house_app/modules/penghuni/features/models/tenant_create_payment.dart';
+import 'package:boarding_house_app/modules/penghuni/features/notifier/tenant_invoices_notifier.dart';
+import 'package:boarding_house_app/modules/penghuni/features/provider/tenant_dashboard_provider.dart';
+import 'package:boarding_house_app/modules/penghuni/features/provider/tenant_invoice_action_provider.dart';
+import 'package:boarding_house_app/modules/penghuni/features/provider/tenant_invoices_provider.dart';
+import 'package:boarding_house_app/modules/penghuni/features/services/tenant_contract_service.dart';
+import 'package:boarding_house_app/modules/penghuni/features/services/tenant_invoice_service.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
-class PaymentModal extends StatefulWidget {
+class PaymentModal extends ConsumerStatefulWidget {
   final int amount;
+  final int invoiceId;
 
-  const PaymentModal({Key? key, required this.amount}) : super(key: key);
+  const PaymentModal({Key? key, required this.amount, required this.invoiceId})
+    : super(key: key);
 
   @override
-  State<PaymentModal> createState() => _PaymentModalState();
+  ConsumerState<PaymentModal> createState() => _PaymentModalState();
 }
 
-class _PaymentModalState extends State<PaymentModal> {
+class _PaymentModalState extends ConsumerState<PaymentModal> {
   String _selectedMethod = 'Bank Transfer';
+  String _paymentCategory = 'Partial';
+
   late TextEditingController _amountController;
   File? _paymentProof;
+  final TenantInvoiceService _invoiceService = TenantInvoiceService();
 
   Future<void> _pickPaymentProof() async {
-    // Implement file picker logic here using immage_picker or file_picker package
     final pickedFile = await ImagePicker().pickImage(
       source: ImageSource.gallery,
     );
@@ -26,6 +39,75 @@ class _PaymentModalState extends State<PaymentModal> {
       setState(() {
         _paymentProof = File(pickedFile.path);
       });
+    }
+  }
+
+  Future<void> _submitPayment() async {
+    final amountText = _amountController.text;
+    String documentUrl = '';
+    if (amountText.isEmpty || _paymentProof == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Jumlah pembayaran dan bukti pembayaran harus diisi'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    if (_paymentProof == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Bukti pembayaran harus diunggah'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    try {
+      documentUrl =
+          await _invoiceService.uploadProofDocument(_paymentProof!) ?? "";
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error uploading document: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    final request = TenantCreatePayment(
+      method: _selectedMethod,
+      amount: int.parse(amountText).toDouble(),
+      paymentProof: documentUrl,
+      category: _paymentCategory,
+    );
+
+    try {
+      await ref
+          .read(tenantInvoiceActionNotifierProvider.notifier)
+          .createPayment(widget.invoiceId, request.toJson());
+      await ref.read(tenantDashboardProvider.notifier).refreshAll();
+      await ref.read(tenantInvoicesProvider.notifier).refreshAll();
+
+      Navigator.of(context).pop();
+      Navigator.of(context).pop();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Payment submitted successfully'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error submitting payment: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
@@ -43,6 +125,21 @@ class _PaymentModalState extends State<PaymentModal> {
 
   @override
   Widget build(BuildContext context) {
+    final state = ref.watch(tenantInvoiceActionNotifierProvider);
+
+    if (state.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (state.hasError) {
+      return Center(
+        child: Text(
+          'Error: ${state.error}',
+          style: const TextStyle(color: Colors.red),
+        ),
+      );
+    }
+
     return Container(
       decoration: const BoxDecoration(
         color: Colors.white,
@@ -128,8 +225,43 @@ class _PaymentModalState extends State<PaymentModal> {
               ),
               const SizedBox(height: 12),
               _buildPaymentMethodOption('Bank Transfer', Icons.account_balance),
-              _buildPaymentMethodOption('QRIS', Icons.qr_code_2),
-              _buildPaymentMethodOption('Virtual Account', Icons.credit_card),
+              _buildPaymentMethodOption('Cash', Icons.money),
+              const SizedBox(height: 24),
+              // Payment Category
+              const Text(
+                'Payment Category',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF1A1A1A),
+                ),
+              ),
+              const SizedBox(height: 8),
+              DropdownButtonFormField<String>(
+                value: _paymentCategory,
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: const Color(0xFFF5F5F5),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+                items: <String>['Partial', 'Full']
+                    .map<DropdownMenuItem<String>>((String value) {
+                      return DropdownMenuItem<String>(
+                        value: value,
+                        child: Text(value),
+                      );
+                    })
+                    .toList(),
+                onChanged: (String? newValue) {
+                  setState(() {
+                    _paymentCategory = newValue!;
+                  });
+                },
+              ),
+
               const SizedBox(height: 24),
 
               const Text(
@@ -172,40 +304,65 @@ class _PaymentModalState extends State<PaymentModal> {
                             ),
                           ],
                         )
-                      : Image.file(_paymentProof!, fit: BoxFit.cover),
+                      : Image.file(_paymentProof!, fit: BoxFit.contain),
                 ),
               ),
 
               const SizedBox(height: 24),
 
               // Confirm Button
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    // Handle payment
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Payment process initiated'),
-                        backgroundColor: Color(0xFF4CAF50),
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          side: const BorderSide(color: Color(0xFFFF6B2C)),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
                       ),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFFF6B2C),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      child: const Text(
+                        'Cancel',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
-                    elevation: 0,
                   ),
-                  child: const Text(
-                    'Confirm Payment',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        // Handle payment
+                        if (!state.isLoading) {
+                          _submitPayment();
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFFF6B2C),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: const Text(
+                        'Confirm Payment',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
                   ),
-                ),
+                ],
               ),
             ],
           ),
