@@ -49,7 +49,9 @@ class _PaymentCardState extends State<PaymentCard> {
           ),
           const SizedBox(height: 12),
           Text(
-            'Rp ${contract?.price ?? 'N/A'}',
+            contract?.invoices != null && contract!.invoices!.isNotEmpty
+                ? _formatCurrency(contract!.invoices!.first.totalAmount.toInt())
+                : _formatCurrency(0),
             style: TextStyle(
               fontSize: 32,
               fontWeight: FontWeight.bold,
@@ -141,5 +143,9 @@ class _PaymentCardState extends State<PaymentCard> {
         ],
       ),
     );
+  }
+
+  String _formatCurrency(int amount) {
+    return 'Rp ${amount.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}';
   }
 }
